@@ -1,0 +1,62 @@
+{
+  "nodes": [
+    {
+      "id": "hub",
+      "type": "text",
+      "text": "Schizm\nIdea seed",
+      "x": 0,
+      "y": 0,
+      "width": 300,
+      "height": 160
+    },
+    {
+      "id": "index",
+      "type": "file",
+      "file": "index.md",
+      "x": 360,
+      "y": -10,
+      "width": 340,
+      "height": 240
+    },
+    {
+      "id": "inbox",
+      "type": "file",
+      "file": "concepts/thought-capture-inbox.md",
+      "x": 760,
+      "y": -140,
+      "width": 360,
+      "height": 260
+    },
+    {
+      "id": "clarifier",
+      "type": "file",
+      "file": "concepts/conversational-thought-clarifier.md",
+      "x": 760,
+      "y": 180,
+      "width": 360,
+      "height": 280
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-hub-index",
+      "fromNode": "hub",
+      "toNode": "index"
+    },
+    {
+      "id": "edge-index-inbox",
+      "fromNode": "index",
+      "toNode": "inbox"
+    },
+    {
+      "id": "edge-index-clarifier",
+      "fromNode": "index",
+      "toNode": "clarifier"
+    },
+    {
+      "id": "edge-inbox-clarifier",
+      "fromNode": "inbox",
+      "toNode": "clarifier"
+    }
+  ]
+}
