@@ -35,6 +35,15 @@
       "y": 180,
       "width": 360,
       "height": 280
+    },
+    {
+      "id": "dream-journal",
+      "type": "file",
+      "file": "journals/dream-journal.md",
+      "x": 760,
+      "y": 520,
+      "width": 360,
+      "height": 260
     }
   ],
   "edges": [
@@ -52,6 +61,11 @@
       "id": "edge-index-clarifier",
       "fromNode": "index",
       "toNode": "clarifier"
+    },
+    {
+      "id": "edge-index-dream-journal",
+      "fromNode": "index",
+      "toNode": "dream-journal"
     },
     {
       "id": "edge-inbox-clarifier",

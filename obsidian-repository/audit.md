@@ -64,3 +64,61 @@
 }
 ```
 <!-- PROMPT-AUDIT-END:98c28bb2-b8d2-4cd5-b931-e50eb8b64d03 -->
+<!-- PROMPT-AUDIT-START:bfbbc0c7-9b52-48a6-8b3b-42b177bc25e4 -->
+## Prompt Round
+
+- Date: 2026-03-14T07:24:57Z
+- Prompt ID: bfbbc0c7-9b52-48a6-8b3b-42b177bc25e4
+- Input Prompt: Add to dream journal: How do you outsmart an ENTJ? Dale wanting to sign a rental contract 90 days in advance.
+
+### Files Added
+- `obsidian-repository/journals/dream-journal.md`: Created a dedicated dream journal because the prompt explicitly targeted that kind of note and no dream-specific journal existed yet.
+
+### Files Modified
+- `obsidian-repository/index.md`: Added the dream journal to the root note so the new journal is discoverable from the repository entry point.
+- `obsidian-repository/main.canvas`: Added a canvas node and connection for the dream journal so the central map reflects the expanded corpus.
+- `obsidian-repository/audit.md`: Appended this run's audit entry as required by the repository contract.
+
+### Files Deleted
+- None.
+
+### Files Moved or Renamed
+- None.
+
+### Canvas Updates
+- `obsidian-repository/main.canvas`: Added a file node for `journals/dream-journal.md` and linked it from the index node to keep the canvas aligned with the new journal path.
+
+### Git
+- Branch: codex/run-bfbbc0c7-9b52-48a6-8b3b-42b177bc25e4
+- Commit: pending-at-audit-write-time
+
+```json
+{
+  "promptId": "bfbbc0c7-9b52-48a6-8b3b-42b177bc25e4",
+  "branch": "codex/run-bfbbc0c7-9b52-48a6-8b3b-42b177bc25e4",
+  "sha": null,
+  "decision": {
+    "mode": "create"
+  },
+  "added": [
+    "obsidian-repository/journals/dream-journal.md"
+  ],
+  "modified": [
+    "obsidian-repository/index.md",
+    "obsidian-repository/main.canvas",
+    "obsidian-repository/audit.md"
+  ],
+  "deleted": [],
+  "moved": [],
+  "canvas": [
+    "obsidian-repository/main.canvas"
+  ],
+  "rationales": {
+    "obsidian-repository/journals/dream-journal.md": "Created a durable place for dream material because the prompt explicitly asked for a dream-journal addition and no such note existed yet.",
+    "obsidian-repository/index.md": "Updated the root note so the new journal is reachable from the main repository overview.",
+    "obsidian-repository/main.canvas": "Extended the canonical map with the new journal node so the graph stays synchronized with the markdown corpus.",
+    "obsidian-repository/audit.md": "Recorded the maintenance round in the append-only audit log."
+  }
+}
+```
+<!-- PROMPT-AUDIT-END:bfbbc0c7-9b52-48a6-8b3b-42b177bc25e4 -->
