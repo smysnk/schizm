@@ -53,6 +53,24 @@
       "y": 620,
       "width": 500,
       "height": 160
+    },
+    {
+      "id": "thought-inbox",
+      "type": "file",
+      "file": "thought-capture-inbox.md",
+      "x": 1480,
+      "y": 120,
+      "width": 380,
+      "height": 260
+    },
+    {
+      "id": "voice-followup",
+      "type": "text",
+      "text": "Thought capture can start as a typed prompt box or an Alexa-style voice input, then ask follow-up questions to sharpen meaning before filing the idea into the map.",
+      "x": 1480,
+      "y": 460,
+      "width": 420,
+      "height": 180
     }
   ],
   "edges": [
@@ -91,6 +109,24 @@
       "fromNode": "worktrees",
       "toNode": "audit",
       "label": "tracked in"
+    },
+    {
+      "id": "edge-plan-thought-inbox",
+      "fromNode": "plan",
+      "toNode": "thought-inbox",
+      "label": "extends prompt UI"
+    },
+    {
+      "id": "edge-thought-inbox-voice-followup",
+      "fromNode": "thought-inbox",
+      "toNode": "voice-followup",
+      "label": "interaction"
+    },
+    {
+      "id": "edge-voice-followup-audit",
+      "fromNode": "voice-followup",
+      "toNode": "audit",
+      "label": "future prompt rounds"
     }
   ]
 }
