@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schizm.local/schemas/codex-run-output.schema.json",
+  "title": "SchizmCodexRunOutput",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "promptId",
+    "resultStatus",
+    "decision",
+    "summary",
+    "repoChanges",
+    "audit",
+    "git",
+    "blockers"
+  ],
+  "properties": {
+    "promptId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "resultStatus": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "completed_with_noop",
+        "failed"
+      ]
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "summary",
+        "targetFiles"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "create",
+            "integrate",
+            "append"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "targetFiles": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repoChanges": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "added",
+        "modified",
+        "deleted",
+        "moved",
+        "canvasUpdated"
+      ],
+      "properties": {
+        "added": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "modified": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "deleted": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "moved": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "from",
+              "to"
+            ],
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1
+              },
+              "to": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "canvasUpdated": {
+          "type": "boolean"
+        }
+      }
+    },
+    "audit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "appended",
+        "promptId",
+        "sectionStartMarker",
+        "sectionEndMarker"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "const": "audit.md"
+        },
+        "appended": {
+          "type": "boolean"
+        },
+        "promptId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sectionStartMarker": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sectionEndMarker": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "git": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "branch",
+        "commitSha",
+        "commitCreated",
+        "pushSucceeded"
+      ],
+      "properties": {
+        "branch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "commitSha": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{7,40}$"
+        },
+        "commitCreated": {
+          "type": "boolean"
+        },
+        "pushSucceeded": {
+          "type": "boolean"
+        }
+      }
+    },
+    "blockers": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  }
+}

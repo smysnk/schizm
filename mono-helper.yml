@@ -1,0 +1,9 @@
+start_port: 3000
+scan_attempts: 1000
+
+slots:
+  SLOT0: WEB_PORT
+  SLOT1: SERVER_PORT
+
+commands:
+  dev: yarn workspaces foreach -A -p -i run dev

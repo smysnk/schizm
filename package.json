@@ -1,0 +1,22 @@
+{
+  "name": "schizm",
+  "private": true,
+  "packageManager": "yarn@4.13.0",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "./scripts/mono-helper.sh dev mono-helper.yml",
+    "build": "yarn workspaces foreach -A -t run build",
+    "start": "./scripts/mono-helper.sh env yarn workspaces foreach -A -p -i run start",
+    "sync:prompt-audit": "tsx scripts/sync-prompt-audit.ts",
+    "dev:web": "./scripts/mono-helper.sh env yarn workspace web dev",
+    "build:web": "yarn workspace web build",
+    "start:web": "./scripts/mono-helper.sh env yarn workspace web start",
+    "dev:server": "./scripts/mono-helper.sh env yarn workspace server dev",
+    "build:server": "yarn workspace server build",
+    "start:server": "./scripts/mono-helper.sh env yarn workspace server start",
+    "migrate": "./scripts/mono-helper.sh env yarn workspace server migrate",
+    "test:server": "yarn workspace server test"
+  }
+}

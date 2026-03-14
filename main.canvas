@@ -1,0 +1,75 @@
+{
+  "nodes": [
+    {
+      "id": "hub",
+      "type": "text",
+      "text": "# Schizm Mind Map\nCanonical map for the repo's markdown operating docs and audit trail.",
+      "x": 120,
+      "y": 180,
+      "width": 420,
+      "height": 180
+    },
+    {
+      "id": "readme",
+      "type": "file",
+      "file": "README.md",
+      "x": 620,
+      "y": 40,
+      "width": 360,
+      "height": 240
+    },
+    {
+      "id": "program",
+      "type": "file",
+      "file": "program.md",
+      "x": 620,
+      "y": 320,
+      "width": 360,
+      "height": 240
+    },
+    {
+      "id": "plan",
+      "type": "file",
+      "file": "prompt-agent-implementation-plan.md",
+      "x": 1040,
+      "y": 40,
+      "width": 420,
+      "height": 280
+    },
+    {
+      "id": "audit",
+      "type": "file",
+      "file": "audit.md",
+      "x": 1040,
+      "y": 360,
+      "width": 360,
+      "height": 240
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-hub-readme",
+      "fromNode": "hub",
+      "toNode": "readme",
+      "label": "entry"
+    },
+    {
+      "id": "edge-hub-program",
+      "fromNode": "hub",
+      "toNode": "program",
+      "label": "contract"
+    },
+    {
+      "id": "edge-program-plan",
+      "fromNode": "program",
+      "toNode": "plan",
+      "label": "implementation"
+    },
+    {
+      "id": "edge-program-audit",
+      "fromNode": "program",
+      "toNode": "audit",
+      "label": "records"
+    }
+  ]
+}
