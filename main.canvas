@@ -3,7 +3,7 @@
     {
       "id": "hub",
       "type": "text",
-      "text": "# Schizm Mind Map\nCanonical map for the repo's markdown operating docs and audit trail.",
+      "text": "# Schizm Mind Map\nCanonical map for the repo's markdown operating docs, isolated prompt-run workflow, and audit trail.",
       "x": 120,
       "y": 180,
       "width": 420,
@@ -44,6 +44,15 @@
       "y": 360,
       "width": 360,
       "height": 240
+    },
+    {
+      "id": "worktrees",
+      "type": "text",
+      "text": "Prompt runs execute in isolated git worktrees rooted on `codex/mindmap`, keeping README guidance aligned with the automation branch model.",
+      "x": 620,
+      "y": 620,
+      "width": 500,
+      "height": 160
     }
   ],
   "edges": [
@@ -70,6 +79,18 @@
       "fromNode": "program",
       "toNode": "audit",
       "label": "records"
+    },
+    {
+      "id": "edge-readme-worktrees",
+      "fromNode": "readme",
+      "toNode": "worktrees",
+      "label": "documents"
+    },
+    {
+      "id": "edge-worktrees-audit",
+      "fromNode": "worktrees",
+      "toNode": "audit",
+      "label": "tracked in"
     }
   ]
 }

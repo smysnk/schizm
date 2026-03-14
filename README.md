@@ -16,3 +16,7 @@
 4. Start both packages with `yarn dev`.
 
 The root `dev` script runs through [mono-helper.yml](mono-helper.yml), and the other runtime scripts are wrapped with `mono-helper` through [scripts/mono-helper.sh](scripts/mono-helper.sh). In both cases, `.env` is exported first and then `mono-helper` assigns the first free `WEB_PORT` / `SERVER_PORT` block starting at `3000`. If you need to point the web app at a fixed external API instead, set `SERVER_URL` in `.env`.
+
+## Prompt processing
+
+Queued prompt-processing runs execute in isolated git worktrees created from the `codex/mindmap` automation branch, so each prompt can update markdown, canvas, and audit artifacts without mutating the primary checkout in place.
