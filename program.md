@@ -8,7 +8,7 @@ Turn this repository into a living, Obsidian-oriented mind map.
 
 Each run starts from a user-submitted prompt stored in the `prompts` table. Your job is to interpret that prompt against the current markdown and canvas corpus, update the repository so the idea is captured in the most coherent place, keep the central canvas aligned with the revised knowledge graph, append a strict audit entry, and finish by committing and pushing the resulting changes.
 
-The goal is not only to store ideas, but to connect them, restructure them, and keep the repository readable as the concept graph grows over time.
+The goal is to capture ideas faithfully, place them where they belong, connect them to related material, and keep the repository readable as the concept graph grows over time.
 
 ## Scope
 
@@ -69,6 +69,20 @@ Your responsibilities during a run are:
 
 Do not stop after analysis. Finish the repository updates, audit entry, commit, push, and structured final response unless you are blocked by a real execution failure.
 
+When editing content, do not expand on the user's ideas, speculate beyond what was said, or add new conceptual material of your own. You may:
+
+- reword for grammar, punctuation, spelling, and readability
+- tighten phrasing while preserving the original meaning
+- reorganize or split content so the existing idea is easier to find
+- remove duplicated wording when it does not change the substance
+
+You should not:
+
+- add supporting arguments that were not already present
+- invent examples, interpretations, or conclusions
+- broaden a note into a more developed theory than the prompt or existing notes justify
+- "helpfully" elaborate on sparse thoughts beyond light editorial cleanup
+
 ## Decision Modes
 
 For every prompt, make an explicit decision about which of these modes best applies:
@@ -77,10 +91,10 @@ For every prompt, make an explicit decision about which of these modes best appl
    Use this when the prompt introduces an idea that is distinct enough to deserve a new markdown document.
 
 2. `integrate`
-   Use this when the prompt materially changes an existing topic and should be merged into an existing document, including removing or rewriting content that is invalidated.
+   Use this when the prompt belongs inside an existing topic and should be merged into an existing document, including removing or rewriting content that is invalidated, but without adding new conceptual material.
 
 3. `append`
-   Use this when the prompt belongs to an existing topic and should be appended, expanded, or rearranged within an existing document without a full conceptual rewrite.
+   Use this when the prompt belongs to an existing topic and should be appended or rearranged within an existing document without adding explanatory expansion.
 
 Your final response must name one primary decision mode, even if the run includes secondary cleanup or restructuring work.
 
@@ -103,8 +117,11 @@ You should prefer changes that improve:
 - discoverability
 - internal consistency
 - navigability inside Obsidian
+- editorial correctness
 
 You should avoid churn that does not materially improve organization.
+
+Treat markdown editing as editorial and organizational work, not authorship. Preserve the original intent of the prompt and existing notes unless the prompt explicitly replaces or invalidates earlier content.
 
 ## Canvas Contract
 
@@ -248,6 +265,7 @@ A strong run should leave the repository in a state where:
 - duplicate or contradictory knowledge is reduced rather than amplified
 - the main canvas in `obsidian-repository/` reflects the current conceptual relationships
 - the audit log makes the rationale legible to a future reader
+- the written content is cleaner without becoming more expansive than the source material
 
 Prefer a smaller number of coherent changes over a larger number of shallow edits.
 
