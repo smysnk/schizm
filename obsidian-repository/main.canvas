@@ -3,17 +3,17 @@
     {
       "id": "hub",
       "type": "text",
-      "text": "# Schizm Mind Map\nCanonical map for the repo's markdown operating docs and audit trail.",
+      "text": "# Schizm Mind Map\nCanonical map for the document store, isolated prompt-run workflow, and audit trail.",
       "x": 120,
       "y": 180,
-      "width": 420,
-      "height": 180
+      "width": 460,
+      "height": 190
     },
     {
       "id": "readme",
       "type": "file",
-      "file": "README.md",
-      "x": 620,
+      "file": "../README.md",
+      "x": 660,
       "y": 40,
       "width": 360,
       "height": 240
@@ -21,8 +21,8 @@
     {
       "id": "program",
       "type": "file",
-      "file": "program.md",
-      "x": 620,
+      "file": "../program.md",
+      "x": 660,
       "y": 320,
       "width": 360,
       "height": 240
@@ -30,20 +30,29 @@
     {
       "id": "plan",
       "type": "file",
-      "file": "prompt-agent-implementation-plan.md",
-      "x": 1040,
+      "file": "../prompt-agent-implementation-plan.md",
+      "x": 1080,
       "y": 40,
-      "width": 420,
+      "width": 440,
       "height": 280
     },
     {
       "id": "audit",
       "type": "file",
       "file": "audit.md",
-      "x": 1040,
+      "x": 1080,
       "y": 360,
       "width": 360,
       "height": 240
+    },
+    {
+      "id": "worktrees",
+      "type": "text",
+      "text": "Prompt runs execute in isolated git worktrees rooted on `codex/mindmap`, while automated content changes stay confined to `obsidian-repository/`.",
+      "x": 660,
+      "y": 620,
+      "width": 520,
+      "height": 170
     }
   ],
   "edges": [
@@ -70,6 +79,18 @@
       "fromNode": "program",
       "toNode": "audit",
       "label": "records"
+    },
+    {
+      "id": "edge-readme-worktrees",
+      "fromNode": "readme",
+      "toNode": "worktrees",
+      "label": "documents"
+    },
+    {
+      "id": "edge-worktrees-audit",
+      "fromNode": "worktrees",
+      "toNode": "audit",
+      "label": "tracked in"
     }
   ]
 }

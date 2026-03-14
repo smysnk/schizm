@@ -14,8 +14,8 @@ Turn the repo into a living, Obsidian-oriented mind map where:
 - each prompt is stored and tracked in Postgres
 - Codex CLI evaluates the prompt against the existing markdown and canvas content
 - the repo is reorganized when appropriate
-- the central canvas stays aligned with the markdown corpus
-- every round is appended to `audit.md`
+- the central canvas inside `obsidian-repository/` stays aligned with the markdown corpus
+- every round is appended to `obsidian-repository/audit.md`
 - each round ends with a commit, push, and audit sync back into the originating `prompt` row
 
 ## Scope
@@ -47,8 +47,8 @@ The existing monorepo remains the control plane:
 2. The server inserts a `prompt` row with `queued` status.
 3. A background prompt runner claims the next queued prompt.
 4. The runner invokes `codex exec` in this repository with a strict instruction contract.
-5. Codex scans markdown files and Obsidian canvas files, decides how to reorganize content, updates files, updates the main canvas, appends `audit.md`, commits, and pushes.
-6. A local helper script parses the resulting `audit.md` entry and writes structured audit data plus branch/SHA back into the current `prompt.audit`.
+5. Codex scans markdown files and Obsidian canvas files inside `obsidian-repository/`, decides how to reorganize content, updates files, updates the canonical canvas, appends `obsidian-repository/audit.md`, commits, and pushes.
+6. A local helper script parses the resulting `obsidian-repository/audit.md` entry and writes structured audit data plus branch/SHA back into the current `prompt.audit`.
 7. The frontend polls prompt status and surfaces progress/results.
 
 ## Data Model
@@ -200,8 +200,8 @@ The agent needs to:
 
 - inspect and modify arbitrary markdown files
 - create, move, rename, and delete files
-- update the Obsidian canvas JSON
-- append `audit.md`
+- update the Obsidian canvas JSON inside `obsidian-repository/`
+- append `obsidian-repository/audit.md`
 - run git commit and git push
 
 Those tasks require broad write access within the repo.
@@ -232,14 +232,14 @@ It should follow the spirit and structure of `references/autoresearch/program.md
 The coding agent should:
 
 - read the submitted prompt content
-- scan the existing markdown corpus
-- scan the existing Obsidian canvas files, especially the canonical canvas
+- scan the existing markdown corpus inside `obsidian-repository/`
+- scan the existing Obsidian canvas files inside `obsidian-repository/`, especially the canonical canvas
 - decide whether to:
   1. create a new document
   2. integrate into an existing document, including removing invalidated content
   3. append and reorganize within an existing document
 - update the main canvas to reflect the revised knowledge graph
-- append a structured section to `audit.md`
+- append a structured section to `obsidian-repository/audit.md`
 - commit and push the resulting repo changes
 
 ### Allowed file operations
@@ -252,7 +252,7 @@ The contract should explicitly allow:
 - rename markdown files
 - move markdown files
 - merge markdown files
-- update the canonical canvas file
+- update the canonical canvas file in `obsidian-repository/`
 
 ### Canonical canvas
 
@@ -260,13 +260,13 @@ Define one canonical canvas path in `program.md`.
 
 Suggested first version:
 
-- `/Users/josh/play/schizm/main.canvas`
+- `/Users/josh/play/schizm/obsidian-repository/main.canvas`
 
 ## Audit Design
 
 Create:
 
-- `/Users/josh/play/schizm/audit.md`
+- `/Users/josh/play/schizm/obsidian-repository/audit.md`
 
 Each run appends one strict section.
 
@@ -306,7 +306,7 @@ Use both human-readable markdown and machine-parseable markers:
 - `path`: rationale
 
 ### Canvas Updates
-- `main.canvas`: rationale
+- `obsidian-repository/main.canvas`: rationale
 
 ### Git
 - Branch: ...
@@ -339,7 +339,7 @@ Add a local helper CLI invoked after each Codex run:
 ### Responsibilities
 
 - locate the audit section for the current prompt id
-- parse the structured content from `audit.md`
+- parse the structured content from `obsidian-repository/audit.md`
 - read the current git branch and commit SHA
 - update `prompts.audit`
 - enrich the audit JSON with branch and SHA if they were not already present
@@ -483,7 +483,7 @@ and annotated in `metadata` with a recovery note.
 ### Phase 3: repo-agent contract
 
 - add `program.md`
-- add `audit.md`
+- add `obsidian-repository/audit.md`
 - add output JSON schema for Codex final response
 
 ### Phase 4: background execution
@@ -496,7 +496,7 @@ and annotated in `metadata` with a recovery note.
 ### Phase 5: audit reconciliation
 
 - add `scripts/sync-prompt-audit.ts`
-- parse `audit.md`
+- parse `obsidian-repository/audit.md`
 - sync audit JSON back into the prompt row
 - append git branch/SHA
 
@@ -512,7 +512,7 @@ and annotated in `metadata` with a recovery note.
 ### New files
 
 - `/Users/josh/play/schizm/program.md`
-- `/Users/josh/play/schizm/audit.md`
+- `/Users/josh/play/schizm/obsidian-repository/audit.md`
 - `/Users/josh/play/schizm/prompt-agent-implementation-plan.md`
 - `/Users/josh/play/schizm/packages/server/src/repositories/prompt-repository.ts`
 - `/Users/josh/play/schizm/packages/server/src/services/prompt-runner.ts`
@@ -548,7 +548,7 @@ The first end-to-end milestone should be:
 2. prompt row is created and visible in UI
 3. background runner claims the row
 4. Codex reads `program.md`
-5. Codex makes a minimal markdown change and appends `audit.md`
+5. Codex makes a minimal markdown change inside `obsidian-repository/` and appends `obsidian-repository/audit.md`
 6. Codex commits and pushes on the managed automation branch
 7. audit sync helper stores parsed audit plus branch/SHA back into `prompt.audit`
 8. UI shows `completed`

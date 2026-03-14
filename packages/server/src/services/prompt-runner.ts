@@ -151,6 +151,7 @@ const summarizeErrorStack = (error: unknown) => {
 const buildInstruction = ({
   prompt,
   repoRoot,
+  documentStoreRoot,
   programPath,
   auditPath,
   schemaPath,
@@ -160,6 +161,7 @@ const buildInstruction = ({
 }: {
   prompt: Prompt;
   repoRoot: string;
+  documentStoreRoot: string;
   programPath: string;
   auditPath: string;
   schemaPath: string;
@@ -169,6 +171,7 @@ const buildInstruction = ({
 }) => `You are processing a queued repository-maintenance prompt for this project.
 
 Repository root: ${repoRoot}
+Document store root: ${documentStoreRoot}
 Program contract: ${programPath}
 Audit log: ${auditPath}
 Final output schema: ${schemaPath}
@@ -179,7 +182,8 @@ Git remote: ${remoteName}
 
 Before making changes:
 - Read ${programPath} and follow it strictly.
-- Inspect the current markdown corpus and canvas files.
+- Inspect the current markdown corpus and canvas files under ${documentStoreRoot}.
+- Treat every path outside ${documentStoreRoot} as read-only unless the human explicitly asked otherwise.
 - Treat ${path.join(repoRoot, "packages")} and ${path.join(repoRoot, "scripts")} as read-only unless absolutely required by the contract.
 
 User prompt:
@@ -189,7 +193,7 @@ ${prompt.content}
 
 Run requirements:
 - Update markdown and canvas files according to the contract in program.md.
-- Append exactly one audit section to audit.md using the required markers for prompt ${prompt.id} if the run reaches a coherent stopping point.
+- Append exactly one audit section to ${auditPath} using the required markers for prompt ${prompt.id} if the run reaches a coherent stopping point.
 - Commit and push the resulting repository changes if the run succeeds.
 - Return only a single JSON object that matches ${schemaPath}.
 - The returned JSON must use promptId "${prompt.id}".
@@ -553,12 +557,14 @@ export class PromptRunner {
       });
 
       const repoRoot = preparedWorktree.worktreePath;
+      const documentStoreRoot = path.join(repoRoot, env.documentStoreDir);
       const programPath = path.join(repoRoot, "program.md");
-      const auditPath = path.join(repoRoot, "audit.md");
+      const auditPath = path.join(documentStoreRoot, "audit.md");
       const schemaPath = path.join(repoRoot, "schemas", "codex-run-output.schema.json");
 
       Object.assign(runnerMetadata, {
         repoRoot,
+        documentStoreRoot,
         programPath,
         auditPath,
         schemaPath,
@@ -570,6 +576,7 @@ export class PromptRunner {
 
       preflightCanvasReport = await validateCanvasState({
         repoRoot,
+        knowledgeRoot: documentStoreRoot,
         requireCanonical: false
       });
 
@@ -595,6 +602,7 @@ export class PromptRunner {
       const instruction = buildInstruction({
         prompt,
         repoRoot,
+        documentStoreRoot,
         programPath,
         auditPath,
         schemaPath,
@@ -644,6 +652,7 @@ export class PromptRunner {
       await transitionTo("updating_canvas", "Validating canvas files after Codex output.");
       postflightCanvasReport = await validateCanvasState({
         repoRoot,
+        knowledgeRoot: documentStoreRoot,
         requireCanonical: finalOutput.repoChanges.canvasUpdated
       });
       runnerMetadata.canvasValidation = {
@@ -663,7 +672,10 @@ export class PromptRunner {
       let auditSyncResult: JsonObject | null = null;
 
       if (finalOutput.audit.appended) {
-        await transitionTo("syncing_audit", "Synchronizing audit.md into prompts.audit.");
+        await transitionTo(
+          "syncing_audit",
+          "Synchronizing obsidian-repository/audit.md into prompts.audit."
+        );
         auditSyncResult = await executeAuditSync({
           promptId: prompt.id,
           artifacts,

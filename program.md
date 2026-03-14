@@ -16,36 +16,39 @@ Read these files for context:
 
 - `README.md` for repo structure and local runtime behavior
 - `prompt-agent-implementation-plan.md` for the implementation intent and lifecycle model
-- `audit.md` for prior rounds and audit formatting expectations
-- the current markdown corpus in the repository root or any nested directories
-- the canonical canvas file and any other Obsidian canvas files if they exist
+- `obsidian-repository/audit.md` for prior rounds and audit formatting expectations
+- the current markdown corpus inside `obsidian-repository/`
+- the canonical canvas at `obsidian-repository/main.canvas` and any other Obsidian canvas files inside `obsidian-repository/`
 
 Files you may update:
 
-- markdown files anywhere in the repository
-- Obsidian canvas files anywhere in the repository
-- `audit.md`
-- newly created markdown files or folders
-- newly created canvas files if justified by the prompt
+- markdown files inside `obsidian-repository/`
+- Obsidian canvas files inside `obsidian-repository/`
+- `obsidian-repository/audit.md`
+- newly created markdown files or folders inside `obsidian-repository/`
+- newly created canvas files inside `obsidian-repository/` if justified by the prompt
 
 Files you should treat as read-only unless the human explicitly asks otherwise:
 
+- every path outside `obsidian-repository/`
 - `program.md`
 - `prompt-agent-implementation-plan.md`
 - application source under `packages/`
 - scripts under `scripts/`
 - dependency files such as `package.json`, `yarn.lock`, or TypeScript config files
 
+The coding agent is only allowed to add, modify, move, rename, or delete files within `obsidian-repository/`.
+
 ## Canonical Artifacts
 
 The core artifacts for each prompt-processing run are:
 
 - the user prompt content supplied by the app
-- `audit.md`
-- the canonical canvas at `main.canvas`
-- every markdown file that is semantically relevant to the prompt
+- `obsidian-repository/audit.md`
+- the canonical canvas at `obsidian-repository/main.canvas`
+- every markdown file inside `obsidian-repository/` that is semantically relevant to the prompt
 
-If `main.canvas` does not exist yet, create it as part of the first run that needs it.
+If `obsidian-repository/main.canvas` does not exist yet, create it as part of the first run that needs it.
 
 ## Operating Contract
 
@@ -54,10 +57,10 @@ The app or runner invokes you for one prompt at a time.
 Your responsibilities during a run are:
 
 1. Read the submitted prompt carefully.
-2. Scan the existing markdown corpus and canvas files for relevant related content.
+2. Scan the existing markdown corpus and canvas files inside `obsidian-repository/` for relevant related content.
 3. Decide how the new idea should be integrated.
-4. Update markdown files and canvas files accordingly.
-5. Append one strict audit section to `audit.md`.
+4. Update markdown files and canvas files inside `obsidian-repository/` accordingly.
+5. Append one strict audit section to `obsidian-repository/audit.md`.
 6. Commit the resulting changes.
 7. Push the commit to the configured remote branch.
 8. Return a structured final response that matches `schemas/codex-run-output.schema.json`.
@@ -103,11 +106,11 @@ You should avoid churn that does not materially improve organization.
 
 ## Canvas Contract
 
-Maintain `main.canvas` as the central conceptual map.
+Maintain `obsidian-repository/main.canvas` as the central conceptual map.
 
 When markdown files are created, removed, renamed, moved, or substantially repurposed:
 
-- update `main.canvas`
+- update `obsidian-repository/main.canvas`
 - reflect the current file set and their conceptual relationships
 - keep the layout neat and readable
 - avoid duplicated or orphaned nodes when possible
@@ -120,7 +123,7 @@ If a prompt causes a major conceptual reorganization, the canvas should be reorg
 
 ## Audit Contract
 
-Append exactly one section to `audit.md` for each completed run.
+Append exactly one section to `obsidian-repository/audit.md` for each completed run.
 
 The section must use these boundaries:
 
@@ -171,7 +174,7 @@ Use this exact shape as the audit skeleton:
 - `old/path.md` -> `new/path.md`: rationale
 
 ### Canvas Updates
-- `main.canvas`: rationale
+- `obsidian-repository/main.canvas`: rationale
 
 ### Git
 - Branch: <branch-name>
@@ -226,9 +229,9 @@ Your final response must match:
 The final response must summarize:
 
 - which decision mode was chosen
-- which files changed
-- whether `audit.md` was updated
-- whether `main.canvas` was updated
+- which files changed inside `obsidian-repository/`
+- whether `obsidian-repository/audit.md` was updated
+- whether `obsidian-repository/main.canvas` was updated
 - the final git branch and commit SHA
 - whether push succeeded
 - any blockers or follow-up notes
@@ -241,7 +244,7 @@ A strong run should leave the repository in a state where:
 
 - the new idea is easy to find
 - duplicate or contradictory knowledge is reduced rather than amplified
-- the main canvas reflects the current conceptual relationships
+- the main canvas in `obsidian-repository/` reflects the current conceptual relationships
 - the audit log makes the rationale legible to a future reader
 
 Prefer a smaller number of coherent changes over a larger number of shallow edits.

@@ -10,6 +10,7 @@ type CanvasValidationIssue = {
 
 type CanvasValidationOptions = {
   repoRoot: string;
+  knowledgeRoot?: string;
   requireCanonical?: boolean;
 };
 
@@ -41,6 +42,10 @@ const toRelativePath = (repoRoot: string, filePath: string) =>
   path.relative(repoRoot, filePath) || path.basename(filePath);
 
 const findCanvasFiles = async (rootDirectory: string): Promise<string[]> => {
+  if (!existsSync(rootDirectory)) {
+    return [];
+  }
+
   const entries = await fs.readdir(rootDirectory, { withFileTypes: true });
   const nestedFiles = await Promise.all(
     entries.map(async (entry) => {
@@ -184,17 +189,18 @@ const validateCanvasDocument = (
 
 export const validateCanvasState = async ({
   repoRoot,
+  knowledgeRoot = repoRoot,
   requireCanonical = false
 }: CanvasValidationOptions): Promise<CanvasValidationReport> => {
   const checkedAt = new Date().toISOString();
-  const canonicalPath = path.join(repoRoot, "main.canvas");
+  const canonicalPath = path.join(knowledgeRoot, "main.canvas");
   const canonicalExists = existsSync(canonicalPath);
-  const files = await findCanvasFiles(repoRoot);
+  const files = await findCanvasFiles(knowledgeRoot);
   const issues: CanvasValidationIssue[] = [];
 
   if (requireCanonical && !canonicalExists) {
     issues.push({
-      path: "main.canvas",
+      path: toRelativePath(repoRoot, canonicalPath),
       message: "Canonical canvas is required for this run but does not exist."
     });
   }

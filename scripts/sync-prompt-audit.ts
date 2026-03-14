@@ -305,7 +305,7 @@ const buildAuditPayload = ({
 export const syncPromptAudit = async ({
   promptId,
   repoRoot = env.promptRunnerRepoRoot,
-  auditPath = path.join(repoRoot, "audit.md")
+  auditPath = path.join(repoRoot, env.documentStoreDir, "audit.md")
 }: SyncPromptAuditOptions): Promise<SyncPromptAuditResult> => {
   const auditSource = await fs.readFile(auditPath, "utf8");
   const { sectionStartMarker, sectionEndMarker, rawSection } = extractAuditSection(

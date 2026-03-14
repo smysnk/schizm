@@ -45,6 +45,7 @@ const resolveRepoRoot = () => {
 };
 
 export const env = {
+  documentStoreDir: process.env.DOCUMENT_STORE_DIR || "obsidian-repository",
   appTitle: process.env.APP_TITLE || "Schizm",
   graphTitle: process.env.GRAPH_TITLE || "Connection Field",
   graphSubtitle:
