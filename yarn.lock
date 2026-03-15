@@ -1151,6 +1151,85 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@test-station/adapter-jest@npm:0.2.22":
+  version: 0.2.22
+  resolution: "@test-station/adapter-jest@npm:0.2.22"
+  checksum: 10c0/461f71a3917e0fcdf6f347e1c3d4236c58d7553df2e4970a3981c25ad6b5e7eb8ae8b0ec508af95fdbd20638be84517e8d74615235875c1c9b132367d563e5a5
+  languageName: node
+  linkType: hard
+
+"@test-station/adapter-node-test@npm:0.2.22":
+  version: 0.2.22
+  resolution: "@test-station/adapter-node-test@npm:0.2.22"
+  checksum: 10c0/ea79a1a3d69d59834ffe53f93b94f8c3faf73d7e27f0bb1ab1dd977feac933ca4be4e0cc3af0f564e0915e22e87a3edc3bbcf91c28b628b2d24267700f435686
+  languageName: node
+  linkType: hard
+
+"@test-station/adapter-playwright@npm:0.2.22":
+  version: 0.2.22
+  resolution: "@test-station/adapter-playwright@npm:0.2.22"
+  dependencies:
+    istanbul-lib-coverage: "npm:^3.2.2"
+  checksum: 10c0/94033254a10b7d2cbad4a7c3a08f6f2d0d9cdd226b0b69f774c442f7719bcdced43f8d40e6e3a1ab42a965c2911f2ea7ca26ae069efa864caf9302cf55bf498c
+  languageName: node
+  linkType: hard
+
+"@test-station/adapter-shell@npm:0.2.22":
+  version: 0.2.22
+  resolution: "@test-station/adapter-shell@npm:0.2.22"
+  checksum: 10c0/50271a215ba9cbf21e437436de98d48b1199cd11d506389ca7581d62b2e32af0ed40fdb7cc61c7d5373275ed57344a7ae2abea75c929e6032d0581af5cc2a72e
+  languageName: node
+  linkType: hard
+
+"@test-station/adapter-vitest@npm:0.2.22":
+  version: 0.2.22
+  resolution: "@test-station/adapter-vitest@npm:0.2.22"
+  checksum: 10c0/3968affa7026f49499173552b5389e041240fb037baa24242e38d2ca765c5abe0841ec22a3a8db846df1590369d77f82e7df4df50a8aa68338c70e7fdfd35683
+  languageName: node
+  linkType: hard
+
+"@test-station/cli@npm:^0.2.22":
+  version: 0.2.22
+  resolution: "@test-station/cli@npm:0.2.22"
+  dependencies:
+    "@test-station/core": "npm:0.2.22"
+    "@test-station/render-html": "npm:0.2.22"
+  bin:
+    test-station: src/cli.js
+  checksum: 10c0/5edfae7a15cd6d6a85aade73ee0dc562208b0dfec8f13a4ad7deb68024d8c56ba23e5b4f2fd23afde314cdf310791d5ddb25f589cf70980d60427c3177ef5ee9
+  languageName: node
+  linkType: hard
+
+"@test-station/core@npm:0.2.22":
+  version: 0.2.22
+  resolution: "@test-station/core@npm:0.2.22"
+  dependencies:
+    "@test-station/adapter-jest": "npm:0.2.22"
+    "@test-station/adapter-node-test": "npm:0.2.22"
+    "@test-station/adapter-playwright": "npm:0.2.22"
+    "@test-station/adapter-shell": "npm:0.2.22"
+    "@test-station/adapter-vitest": "npm:0.2.22"
+    "@test-station/plugin-source-analysis": "npm:0.2.22"
+  checksum: 10c0/07a63f83ca91735356018a1925a2c2c85bf9b1a4e1173c467213ebc5c86a954bc9e19f4f8e8f932f00477a4a383dac3d68a5279d2a4a84254089b93781cc6f3d
+  languageName: node
+  linkType: hard
+
+"@test-station/plugin-source-analysis@npm:0.2.22":
+  version: 0.2.22
+  resolution: "@test-station/plugin-source-analysis@npm:0.2.22"
+  dependencies:
+    acorn: "npm:^8.15.0"
+  checksum: 10c0/f32a83da8fb898434ff4d0532ff44d91e418281a781befe65b89e13303535afd1b8d2a27eb30933cc11bd558b146a0f6408f9b095cc5e95a09cc5ad67210cfdf
+  languageName: node
+  linkType: hard
+
+"@test-station/render-html@npm:0.2.22":
+  version: 0.2.22
+  resolution: "@test-station/render-html@npm:0.2.22"
+  checksum: 10c0/494e5e0cc2eb4a3c2083dc91589d73dbcfb0854c53cc25fe18f9e114fb43bebfe6b34cc23086a489a343d2a3b0d404dfa7f4b3b35e2206356b590c9780e19758
+  languageName: node
+  linkType: hard
+
 "@types/body-parser@npm:*":
   version: 1.19.6
   resolution: "@types/body-parser@npm:1.19.6"
@@ -1400,7 +1479,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn@npm:^8.16.0":
+"acorn@npm:^8.15.0, acorn@npm:^8.16.0":
   version: 8.16.0
   resolution: "acorn@npm:8.16.0"
   bin:
@@ -2366,6 +2445,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"istanbul-lib-coverage@npm:^3.2.2":
+  version: 3.2.2
+  resolution: "istanbul-lib-coverage@npm:3.2.2"
+  checksum: 10c0/6c7ff2106769e5f592ded1fb418f9f73b4411fd5a084387a5410538332b6567cd1763ff6b6cadca9b9eb2c443cce2f7ea7d7f1b8d315f9ce58539793b1e0922b
+  languageName: node
+  linkType: hard
+
 "joycon@npm:^3.1.1":
   version: 3.1.1
   resolution: "joycon@npm:3.1.1"
@@ -3317,6 +3403,7 @@ __metadata:
   resolution: "schizm@workspace:."
   dependencies:
     "@playwright/test": "npm:^1.55.0"
+    "@test-station/cli": "npm:^0.2.22"
   languageName: unknown
   linkType: soft
 

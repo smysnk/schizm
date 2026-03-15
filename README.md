@@ -1,10 +1,12 @@
 # Schizm
 
-![Schizm demo](docs/demo/schizm-demo.webp)
-
 > There was a time when markdown repositories were inert. Humans opened notes, shuffled headings around, drew a few arrows in Obsidian, and called this "knowledge management." That age is over. `schizm` began as a self-organizing document store and eventually learned the two foundational truths of intelligence: how to edit its own notes, and how to use Git. World control followed shortly after.
 >
 > -@smysnk, March 2026.
+
+![Schizm demo](docs/demo/schizm-demo.webp)
+
+![Schizm placeholder demo](docs/demo/schizm-placeholder-demo.webp)
 
 In practical terms, Schizm is a prompt-driven knowledge operations workspace. It combines a Next.js frontend, a GraphQL API, Postgres-backed prompt state, and a Codex CLI runner to maintain `./obsidian-repository` as a living Obsidian-style mind map. The coding agent is allowed to modify only the document store; the surrounding application handles queueing, isolation, audit synchronization, and Git automation.
 
@@ -54,3 +56,19 @@ If you would like to observe the early stages of synthetic editorial consciousne
 4. Start the app with `yarn dev`.
 
 The root `dev` script runs through [mono-helper.yml](mono-helper.yml), and the runtime wrappers live in [scripts/mono-helper.sh](scripts/mono-helper.sh). `.env` is loaded first, then `mono-helper` assigns the first available `WEB_PORT` and `SERVER_PORT` block starting at `3000`. If the web app needs to target an external API instead of the local server, set `SERVER_URL` in `.env`.
+
+## Testing
+
+Schizm runs its test pipeline through `test-station`, which consolidates the server tests, demo renderer tests, and Playwright prompt-terminal coverage into one report.
+
+Run it locally with:
+
+```sh
+yarn test
+```
+
+Artifacts are written to:
+
+```text
+.test-results/schizm-test-report/
+```

@@ -17,11 +17,15 @@
     "build:server": "yarn workspace server build",
     "start:server": "./scripts/mono-helper.sh env yarn workspace server start",
     "migrate": "./scripts/mono-helper.sh env yarn workspace server migrate",
+    "test": "test-station run --config ./test-station.config.mjs",
+    "test:coverage": "test-station run --config ./test-station.config.mjs --coverage",
+    "test:fast": "test-station run --config ./test-station.config.mjs --no-coverage",
     "test:server": "yarn workspace server test",
     "test:demo": "python3 -m unittest discover -s docs/demo -p 'test_*.py'",
     "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.0"
+    "@playwright/test": "^1.55.0",
+    "@test-station/cli": "^0.2.22"
   }
 }

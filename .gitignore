@@ -22,5 +22,7 @@ coverage
 # Local test and demo artifacts
 playwright-report
 test-results
+.test-results
 docs/demo/.font-cache
 docs/demo/__pycache__
+docs/demo/raw/*.png
