@@ -29,13 +29,16 @@ import {
 import { readRuntimeConfig } from "../../lib/runtime-config";
 import {
   PROMPT_ZEN_PLACEHOLDER_QUESTIONS,
-  PROMPT_ZEN_TYPING_CORRECTION_PAUSE_MS,
   PROMPT_ZEN_TYPING_DELETE_MS,
   PROMPT_ZEN_TYPING_END_PAUSE_MS,
-  PROMPT_ZEN_TYPING_ERROR_RATE,
   PROMPT_ZEN_TYPING_MAX_MS,
   PROMPT_ZEN_TYPING_MIN_MS,
-  PROMPT_ZEN_TYPING_START_PAUSE_MS
+  PROMPT_ZEN_TYPING_START_PAUSE_MS,
+  PROMPT_ZEN_TERMINAL_COMPLETE_DELAY_MS,
+  PROMPT_ZEN_TERMINAL_LINE_PAUSE_MS,
+  PROMPT_ZEN_TERMINAL_TRANSITION_DELAY_MS,
+  PROMPT_ZEN_TERMINAL_TYPING_MS,
+  PROMPT_ZEN_TERMINAL_WORKING_TICK_MS
 } from "./prompt-zen.constants";
 import { ThemeToggle } from "../ui/theme-toggle";
 
@@ -83,6 +86,21 @@ type PromptTransitionRecord = {
   at: string;
 };
 
+type PromptTerminalTone = "user" | "system";
+type PromptTerminalKind = "user" | "ack" | "blank" | "status" | "git" | "failure";
+
+type PromptTerminalEntry = {
+  id: string;
+  text: string;
+  tone: PromptTerminalTone;
+  kind: PromptTerminalKind;
+};
+
+type PromptTerminalSession = {
+  promptId: string;
+  content: string;
+};
+
 const RECENT_PROMPTS_LIMIT = 24;
 const activePromptStatuses = new Set<PromptStatus>([
   "queued",
@@ -111,6 +129,31 @@ const workspaceSurfaces: Array<{ id: WorkspaceSurface; label: string }> = [
 
 const repoLabel = "smysnk/schizsm";
 const repoUrl = "https://github.com/smysnk/schizsm";
+const terminalWorkingStatuses = new Set<PromptStatus>([
+  "scanning",
+  "deciding",
+  "writing",
+  "updating_canvas",
+  "auditing",
+  "committing",
+  "pushing",
+  "syncing_audit"
+]);
+
+const promptTerminalStatusMessages: Record<PromptStatus, string> = {
+  queued: "queued for isolated git + codex run",
+  cancelled: "run cancelled by operator",
+  scanning: "preparing isolated git worktree",
+  deciding: "assembling codex instruction payload",
+  writing: "running codex cli",
+  updating_canvas: "validating obsidian canvas updates",
+  auditing: "parsing codex output",
+  committing: "promoting prompt branch onto codex/mindmap",
+  pushing: "pushing codex/mindmap to origin",
+  syncing_audit: "syncing audit.md back into the prompt row",
+  completed: "run complete",
+  failed: "run failed"
+};
 
 const formatPromptStatus = (status: PromptStatus) => status.replace(/_/g, " ");
 
@@ -304,30 +347,132 @@ const getRandomTypingDelay = (character: string) => {
   return base;
 };
 
-const getMistypedCharacter = (character: string) => {
-  const lowerLetters = "abcdefghijklmnopqrstuvwxyz";
-  const upperLetters = lowerLetters.toUpperCase();
-  const digits = "0123456789";
+const buildPromptTerminalEntries = (prompt: PromptRecord | null): PromptTerminalEntry[] => {
+  const entries: PromptTerminalEntry[] = [
+    {
+      id: "ack",
+      text: "OK",
+      tone: "system",
+      kind: "ack"
+    },
+    {
+      id: "spacer",
+      text: "",
+      tone: "system",
+      kind: "blank"
+    }
+  ];
 
-  const source = /[a-z]/.test(character)
-    ? lowerLetters
-    : /[A-Z]/.test(character)
-      ? upperLetters
-      : /[0-9]/.test(character)
-        ? digits
-        : null;
+  const seenStatuses = new Set<PromptStatus>();
+  const pushStatusEntry = (status: PromptStatus) => {
+    if (seenStatuses.has(status)) {
+      return;
+    }
 
-  if (!source) {
-    return character;
+    seenStatuses.add(status);
+    entries.push({
+      id: `status-${status}`,
+      text: `# ${promptTerminalStatusMessages[status]}`,
+      tone: "system",
+      kind: "status"
+    });
+  };
+
+  pushStatusEntry("queued");
+
+  if (!prompt) {
+    return entries;
   }
 
-  let nextCharacter = character;
+  for (const transition of getPromptTransitions(prompt)) {
+    const nextStatus = transition.status as PromptStatus;
 
-  while (nextCharacter === character) {
-    nextCharacter = source[Math.floor(Math.random() * source.length)] || character;
+    if (nextStatus in promptTerminalStatusMessages) {
+      pushStatusEntry(nextStatus);
+    }
   }
 
-  return nextCharacter;
+  if (!seenStatuses.has(prompt.status) && prompt.status !== "queued") {
+    pushStatusEntry(prompt.status);
+  }
+
+  const failure = getPromptFailureDetails(prompt);
+  if (failure.message && prompt.status === "failed") {
+    entries.push({
+      id: "failure-detail",
+      text: `# error: ${failure.message}`,
+      tone: "system",
+      kind: "failure"
+    });
+  }
+
+  const git = getPromptGitSummary(prompt);
+  if (prompt.status === "completed" && (git.branch || git.sha)) {
+    entries.push({
+      id: "git-detail",
+      text: `# git: ${git.branch || "unknown branch"}${git.sha ? ` @ ${git.sha.slice(0, 8)}` : ""}`,
+      tone: "system",
+      kind: "git"
+    });
+  }
+
+  return entries;
+};
+
+const getNextTypedTerminalEntries = (
+  currentEntries: PromptTerminalEntry[],
+  targetEntries: PromptTerminalEntry[]
+) => {
+  for (let index = 0; index < targetEntries.length; index += 1) {
+    const currentEntry = currentEntries[index];
+    const targetEntry = targetEntries[index];
+
+    if (!currentEntry) {
+      return {
+        entries: [
+          ...currentEntries,
+          {
+            ...targetEntry,
+            text: targetEntry.text ? targetEntry.text.slice(0, 1) : ""
+          }
+        ],
+        delayMs: targetEntry.text ? PROMPT_ZEN_TERMINAL_TYPING_MS : PROMPT_ZEN_TERMINAL_LINE_PAUSE_MS
+      };
+    }
+
+    if (currentEntry.id !== targetEntry.id) {
+      return {
+        entries: [
+          ...currentEntries.slice(0, index),
+          {
+            ...targetEntry,
+            text: targetEntry.text ? targetEntry.text.slice(0, 1) : ""
+          }
+        ],
+        delayMs: targetEntry.text ? PROMPT_ZEN_TERMINAL_TYPING_MS : PROMPT_ZEN_TERMINAL_LINE_PAUSE_MS
+      };
+    }
+
+    if (currentEntry.text.length < targetEntry.text.length) {
+      const nextText = targetEntry.text.slice(0, currentEntry.text.length + 1);
+      return {
+        entries: [
+          ...currentEntries.slice(0, index),
+          {
+            ...targetEntry,
+            text: nextText
+          },
+          ...currentEntries.slice(index + 1)
+        ],
+        delayMs:
+          nextText.length === targetEntry.text.length
+            ? PROMPT_ZEN_TERMINAL_LINE_PAUSE_MS
+            : PROMPT_ZEN_TERMINAL_TYPING_MS
+      };
+    }
+  }
+
+  return null;
 };
 
 function GitHubMark() {
@@ -374,10 +519,19 @@ export function IdeaCanvas() {
   const realtimeConnectionStatus = useRealtimeConnectionStatus();
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const promptCursorMarkerRef = useRef<HTMLSpanElement | null>(null);
+  const promptTerminalViewportRef = useRef<HTMLDivElement | null>(null);
+  const promptTerminalContentRef = useRef<HTMLDivElement | null>(null);
   const promptPlaceholderQuestionIndexRef = useRef(0);
   const [promptInput, setPromptInput] = useState("");
   const [animatedPromptText, setAnimatedPromptText] = useState("");
   const [promptInputFocused, setPromptInputFocused] = useState(false);
+  const [promptTerminalSession, setPromptTerminalSession] =
+    useState<PromptTerminalSession | null>(null);
+  const [typedPromptTerminalEntries, setTypedPromptTerminalEntries] = useState<
+    PromptTerminalEntry[]
+  >([]);
+  const [promptTerminalWorkingDots, setPromptTerminalWorkingDots] = useState(1);
+  const [promptTerminalHasOverflow, setPromptTerminalHasOverflow] = useState(false);
   const [promptSelectionStart, setPromptSelectionStart] = useState(0);
   const [promptCursorPosition, setPromptCursorPosition] = useState({
     left: 0,
@@ -444,11 +598,52 @@ export function IdeaCanvas() {
   const selectedPromptRecovery = selectedPrompt ? getPromptRecoveryNote(selectedPrompt) : null;
   const selectedPromptGit = selectedPrompt ? getPromptGitSummary(selectedPrompt) : null;
   const latestSelectedTransition = selectedPrompt ? getLatestPromptTransition(selectedPrompt) : null;
+  const promptTerminalPrompt = promptTerminalSession
+    ? recentPrompts.find((prompt) => prompt.id === promptTerminalSession.promptId) || null
+    : null;
+  const promptTerminalTargetEntries = promptTerminalSession
+    ? buildPromptTerminalEntries(promptTerminalPrompt)
+    : [];
   const promptActionLoading =
     cancelPromptLoading ||
     retryPromptLoading ||
     pausePromptRunnerLoading ||
     resumePromptRunnerLoading;
+  const promptTerminalCurrentTarget =
+    typedPromptTerminalEntries.length > 0
+      ? promptTerminalTargetEntries[typedPromptTerminalEntries.length - 1] || null
+      : null;
+  const promptTerminalCurrentTyped =
+    typedPromptTerminalEntries[typedPromptTerminalEntries.length - 1] || null;
+  const promptTerminalTypingEntryId =
+    promptTerminalCurrentTarget &&
+    promptTerminalCurrentTyped &&
+    promptTerminalCurrentTarget.id === promptTerminalCurrentTyped.id &&
+    promptTerminalCurrentTyped.text.length < promptTerminalCurrentTarget.text.length
+      ? promptTerminalCurrentTyped.id
+      : null;
+  const promptTerminalShouldShowWorking =
+    Boolean(
+      promptTerminalPrompt &&
+        terminalWorkingStatuses.has(promptTerminalPrompt.status)
+    );
+  const promptTerminalWorkingEntry = promptTerminalShouldShowWorking
+    ? {
+        id: `working-${promptTerminalPrompt?.id || "prompt"}-${promptTerminalPrompt?.status || "active"}`,
+        text: `# Working${".".repeat(promptTerminalWorkingDots)}`,
+        tone: "system" as const,
+        kind: "status" as const
+      }
+    : null;
+  const promptTerminalStatusCount = typedPromptTerminalEntries.filter(
+    (entry) => entry.kind === "status" || entry.kind === "failure" || entry.kind === "git"
+  ).length;
+  const promptTerminalEntries = promptTerminalSession
+    ? [
+        ...typedPromptTerminalEntries,
+        ...(promptTerminalWorkingEntry ? [promptTerminalWorkingEntry] : [])
+      ]
+    : [];
   const promptCursorDisplayValue =
     promptInput.length > 0 ? promptInput : promptInputFocused ? "" : animatedPromptText;
   const promptCursorIndex =
@@ -459,7 +654,8 @@ export function IdeaCanvas() {
         : animatedPromptText.length;
   const promptCursorLeadingText = promptCursorDisplayValue.slice(0, promptCursorIndex);
   const promptCursorTrailingText = promptCursorDisplayValue.slice(promptCursorIndex);
-  const showPromptCursor = promptInputFocused || promptInput.length === 0;
+  const showPromptCursor =
+    !promptTerminalSession && (promptInputFocused || promptInput.length === 0);
   const runnerStatusTone = promptRunnerState?.paused
     ? "workspace__footer-note--warning"
     : promptRunnerState?.inFlight
@@ -506,6 +702,124 @@ export function IdeaCanvas() {
   }, [filteredPrompts]);
 
   useEffect(() => {
+    if (!promptTerminalSession) {
+      setTypedPromptTerminalEntries([]);
+      setPromptTerminalWorkingDots(1);
+      setPromptTerminalHasOverflow(false);
+      return;
+    }
+
+    setTypedPromptTerminalEntries([]);
+    setPromptTerminalWorkingDots(1);
+  }, [promptTerminalSession]);
+
+  useEffect(() => {
+    if (!promptTerminalSession) {
+      return;
+    }
+
+    const nextStep = getNextTypedTerminalEntries(
+      typedPromptTerminalEntries,
+      promptTerminalTargetEntries
+    );
+
+    if (!nextStep) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setTypedPromptTerminalEntries(nextStep.entries);
+    }, nextStep.delayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [promptTerminalSession, promptTerminalTargetEntries, typedPromptTerminalEntries]);
+
+  useEffect(() => {
+    if (!promptTerminalShouldShowWorking) {
+      setPromptTerminalWorkingDots(1);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setPromptTerminalWorkingDots((current) => (current >= 3 ? 1 : current + 1));
+    }, PROMPT_ZEN_TERMINAL_WORKING_TICK_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [promptTerminalShouldShowWorking, promptTerminalPrompt?.id, promptTerminalPrompt?.status]);
+
+  useLayoutEffect(() => {
+    if (!promptTerminalSession) {
+      return;
+    }
+
+    const viewport = promptTerminalViewportRef.current;
+    const content = promptTerminalContentRef.current;
+
+    if (!viewport || !content) {
+      return;
+    }
+
+    const updateOverflow = () => {
+      setPromptTerminalHasOverflow(content.scrollHeight > viewport.clientHeight + 1);
+    };
+
+    updateOverflow();
+
+    const resizeObserver = new ResizeObserver(updateOverflow);
+    resizeObserver.observe(viewport);
+    resizeObserver.observe(content);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [promptTerminalEntries, promptTerminalSession]);
+
+  useEffect(() => {
+    if (
+      !promptTerminalSession ||
+      activeSurface !== "prompt" ||
+      !promptTerminalHasOverflow ||
+      promptTerminalStatusCount < 2 ||
+      !promptTerminalPrompt ||
+      activePromptStatuses.has(promptTerminalPrompt.status)
+    ) {
+      return;
+    }
+
+    const transitionDelay = PROMPT_ZEN_TERMINAL_COMPLETE_DELAY_MS;
+
+    const timeoutId = window.setTimeout(() => {
+      setHistoryFilter(
+        promptTerminalPrompt.status === "completed"
+          ? "completed"
+          : promptTerminalPrompt.status === "failed"
+            ? "failed"
+            : promptTerminalPrompt.status === "cancelled"
+              ? "cancelled"
+              : "active"
+      );
+      setActiveSurface("history");
+      setTypedPromptTerminalEntries([]);
+      setPromptTerminalSession(null);
+      setPromptTerminalWorkingDots(1);
+    }, transitionDelay);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [
+    activeSurface,
+    promptTerminalHasOverflow,
+    promptTerminalPrompt,
+    promptTerminalSession,
+    promptTerminalStatusCount
+  ]);
+
+  useEffect(() => {
     if (!themeMenuOpen) {
       return;
     }
@@ -532,7 +846,12 @@ export function IdeaCanvas() {
   }, [themeMenuOpen]);
 
   useEffect(() => {
-    if (activeSurface !== "prompt" || promptInputFocused || promptInput.length > 0) {
+    if (
+      activeSurface !== "prompt" ||
+      promptInputFocused ||
+      promptInput.length > 0 ||
+      promptTerminalSession
+    ) {
       setAnimatedPromptText("");
       return;
     }
@@ -566,20 +885,6 @@ export function IdeaCanvas() {
             return;
           }
 
-          if (!/\s/.test(character) && Math.random() < PROMPT_ZEN_TYPING_ERROR_RATE) {
-            nextText += getMistypedCharacter(character);
-            setAnimatedPromptText(nextText);
-            await sleep(getRandomTypingDelay(character));
-
-            if (cancelled) {
-              return;
-            }
-
-            nextText = nextText.slice(0, -1);
-            setAnimatedPromptText(nextText);
-            await sleep(PROMPT_ZEN_TYPING_CORRECTION_PAUSE_MS);
-          }
-
           nextText += character;
           setAnimatedPromptText(nextText);
           await sleep(getRandomTypingDelay(character));
@@ -607,10 +912,10 @@ export function IdeaCanvas() {
         window.clearTimeout(timeoutId);
       }
     };
-  }, [activeSurface, promptInput.length, promptInputFocused]);
+  }, [activeSurface, promptInput.length, promptInputFocused, promptTerminalSession]);
 
   useLayoutEffect(() => {
-    if (!showPromptCursor || activeSurface !== "prompt") {
+    if (!showPromptCursor || activeSurface !== "prompt" || promptTerminalSession) {
       return;
     }
 
@@ -645,6 +950,7 @@ export function IdeaCanvas() {
     promptCursorLeadingText,
     promptCursorTrailingText,
     promptCursorIndex,
+    promptTerminalSession,
     showPromptCursor
   ]);
 
@@ -670,11 +976,18 @@ export function IdeaCanvas() {
       const createdPrompt = result.data?.createPrompt;
 
       setPromptInput("");
+      setPromptInputFocused(false);
+      setTypedPromptTerminalEntries([]);
+      setPromptTerminalWorkingDots(1);
       if (createdPrompt) {
         setSelectedPromptId(createdPrompt.id);
+        setPromptTerminalSession({
+          promptId: createdPrompt.id,
+          content: createdPrompt.content
+        });
       }
       setHistoryFilter("active");
-      setActiveSurface("history");
+      setActiveSurface("prompt");
       setStatusLabel(
         createdPrompt
           ? `Queued prompt ${createdPrompt.id.slice(0, 8)}.`
@@ -741,8 +1054,15 @@ export function IdeaCanvas() {
       const retriedPrompt = result.data?.retryPrompt;
       if (retriedPrompt) {
         setSelectedPromptId(retriedPrompt.id);
+        setTypedPromptTerminalEntries([]);
+        setPromptTerminalWorkingDots(1);
+        setPromptTerminalSession({
+          promptId: retriedPrompt.id,
+          content: retriedPrompt.content
+        });
       }
       setHistoryFilter("active");
+      setActiveSurface(retriedPrompt ? "prompt" : activeSurface);
       setStatusLabel(
         retriedPrompt
           ? `Re-queued prompt ${retriedPrompt.id.slice(0, 8)}.`
@@ -786,60 +1106,107 @@ export function IdeaCanvas() {
             <div className="prompt-zen">
               <form
                 className="workspace-panel workspace-panel--strong prompt-zen__form"
+                data-mode={promptTerminalSession ? "terminal" : "compose"}
+                data-testid="prompt-zen-form"
                 onSubmit={handlePromptSubmit}
               >
                 <div className="prompt-zen__halo" aria-hidden="true" />
                 <div
                   className="prompt-zen__core"
                   data-empty={promptInput.length === 0}
+                  data-mode={promptTerminalSession ? "terminal" : "compose"}
                 >
-                  <div className="prompt-zen__cursor-measure" aria-hidden="true">
-                    {promptCursorLeadingText}
-                    <span className="prompt-zen__cursor-anchor" ref={promptCursorMarkerRef}>
-                      {"\u200b"}
-                    </span>
-                    {promptCursorTrailingText || " "}
-                  </div>
-                  {showPromptCursor ? (
-                    <span
-                      className="prompt-zen__cursor"
-                      aria-hidden="true"
-                      style={{
-                        left: `${promptCursorPosition.left}px`,
-                        top: `${promptCursorPosition.top}px`,
-                        width: `${promptCursorPosition.width}px`,
-                        height: `${promptCursorPosition.height}px`
-                      }}
-                    />
-                  ) : null}
-                  <label className="sr-only" htmlFor="prompt-input">
-                    New prompt
-                  </label>
-                  <textarea
-                    id="prompt-input"
-                    name="prompt"
-                    rows={8}
-                    value={promptInput}
-                    onChange={(event) => {
-                      setPromptInput(event.target.value);
-                      syncPromptSelection(event.currentTarget.selectionStart);
-                    }}
-                    onFocus={(event) => {
-                      setPromptInputFocused(true);
-                      syncPromptSelection(event.currentTarget.selectionStart);
-                    }}
-                    onBlur={() => setPromptInputFocused(false)}
-                    onClick={(event) => syncPromptSelection(event.currentTarget.selectionStart)}
-                    onKeyDown={handlePromptKeyDown}
-                    onKeyUp={(event) => syncPromptSelection(event.currentTarget.selectionStart)}
-                    onSelect={(event) => syncPromptSelection(event.currentTarget.selectionStart)}
-                    placeholder={promptInputFocused ? "" : animatedPromptText}
-                  />
+                  {promptTerminalSession ? (
+                    <div
+                      className="prompt-zen__terminal"
+                      data-testid="prompt-terminal"
+                      ref={promptTerminalViewportRef}
+                      role="status"
+                      aria-live="polite"
+                    >
+                      <div
+                        className="prompt-zen__terminal-content"
+                        data-testid="prompt-terminal-content"
+                        ref={promptTerminalContentRef}
+                      >
+                        <p
+                          className="prompt-zen__terminal-entry prompt-zen__terminal-entry--user"
+                          data-testid="prompt-terminal-user"
+                        >
+                          {promptTerminalSession.content}
+                        </p>
+                        {promptTerminalEntries.map((entry) => (
+                          <p
+                            key={entry.id}
+                            className={`prompt-zen__terminal-entry prompt-zen__terminal-entry--${entry.tone}`}
+                            data-kind={entry.kind}
+                            data-testid={entry.id.startsWith("working-") ? "prompt-terminal-working" : undefined}
+                          >
+                            {entry.text}
+                            {promptTerminalTypingEntryId === entry.id ||
+                            (promptTerminalWorkingEntry?.id === entry.id &&
+                              promptTerminalShouldShowWorking) ? (
+                              <span
+                                className="prompt-zen__terminal-cursor"
+                                aria-hidden="true"
+                              />
+                            ) : null}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="prompt-zen__cursor-measure" aria-hidden="true">
+                        {promptCursorLeadingText}
+                        <span className="prompt-zen__cursor-anchor" ref={promptCursorMarkerRef}>
+                          {"\u200b"}
+                        </span>
+                        {promptCursorTrailingText || " "}
+                      </div>
+                      {showPromptCursor ? (
+                        <span
+                          className="prompt-zen__cursor"
+                          data-testid="prompt-compose-cursor"
+                          aria-hidden="true"
+                          style={{
+                            left: `${promptCursorPosition.left}px`,
+                            top: `${promptCursorPosition.top}px`,
+                            width: `${promptCursorPosition.width}px`,
+                            height: `${promptCursorPosition.height}px`
+                          }}
+                        />
+                      ) : null}
+                      <label className="sr-only" htmlFor="prompt-input">
+                        New prompt
+                      </label>
+                      <textarea
+                        id="prompt-input"
+                        name="prompt"
+                        rows={8}
+                        value={promptInput}
+                        onChange={(event) => {
+                          setPromptInput(event.target.value);
+                          syncPromptSelection(event.currentTarget.selectionStart);
+                        }}
+                        onFocus={(event) => {
+                          setPromptInputFocused(true);
+                          syncPromptSelection(event.currentTarget.selectionStart);
+                        }}
+                        onBlur={() => setPromptInputFocused(false)}
+                        onClick={(event) => syncPromptSelection(event.currentTarget.selectionStart)}
+                        onKeyDown={handlePromptKeyDown}
+                        onKeyUp={(event) => syncPromptSelection(event.currentTarget.selectionStart)}
+                        onSelect={(event) => syncPromptSelection(event.currentTarget.selectionStart)}
+                        placeholder={promptInputFocused ? "" : animatedPromptText}
+                      />
+                    </>
+                  )}
                 </div>
                 <button
                   type="submit"
                   className="sr-only"
-                  disabled={createPromptLoading || !promptInput.trim()}
+                  disabled={Boolean(promptTerminalSession) || createPromptLoading || !promptInput.trim()}
                 >
                   {createPromptLoading ? "Queueing..." : "Queue prompt"}
                 </button>

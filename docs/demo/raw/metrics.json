@@ -1,0 +1,25 @@
+{
+  "form": {
+    "x": 340,
+    "y": 308.5,
+    "width": 760,
+    "height": 347,
+    "top": 308.5,
+    "right": 1100,
+    "bottom": 655.5,
+    "left": 340
+  },
+  "textarea": {
+    "x": 341,
+    "y": 309.5,
+    "width": 758,
+    "height": 340,
+    "top": 309.5,
+    "right": 1099,
+    "bottom": 649.5,
+    "left": 341
+  },
+  "paddingX": 38,
+  "paddingY": 34,
+  "innerInset": 12
+}

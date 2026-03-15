@@ -18,3 +18,9 @@ coverage
 .codex-workdirs
 .workdirs
 .worktrees
+
+# Local test and demo artifacts
+playwright-report
+test-results
+docs/demo/.font-cache
+docs/demo/__pycache__
