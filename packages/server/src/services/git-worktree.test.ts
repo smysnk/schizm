@@ -239,6 +239,73 @@ test("preparePromptWorktree preserves tracked symlinks while syncing controller 
   }
 });
 
+test("preparePromptWorktree seeds the document store from the base ref when the automation branch has none", async () => {
+  const rootDirectory = await mkdtemp(path.join(os.tmpdir(), "schizm-git-worktree-base-seed-"));
+  const repoRoot = path.join(rootDirectory, "repo");
+  const worktreeRoot = path.join(rootDirectory, "worktrees");
+
+  try {
+    await mkdir(repoRoot, { recursive: true });
+    await runGit(repoRoot, ["init", "-b", "main"]);
+    await runGit(repoRoot, ["config", "user.name", "Schizm Tests"]);
+    await runGit(repoRoot, ["config", "user.email", "schizm-tests@example.com"]);
+
+    await writeFile(path.join(repoRoot, "README.md"), "# Main README\n", "utf8");
+    await runGit(repoRoot, ["add", "README.md"]);
+    await runGit(repoRoot, ["commit", "-m", "Initial commit without document store"]);
+
+    await runGit(repoRoot, ["branch", "codex/mindmap"]);
+
+    await mkdir(path.join(repoRoot, "obsidian-repository"), { recursive: true });
+    await writeFile(
+      path.join(repoRoot, "obsidian-repository", "audit.md"),
+      "# Prompt Audit Log\n",
+      "utf8"
+    );
+    await writeFile(
+      path.join(repoRoot, "obsidian-repository", "main.canvas"),
+      JSON.stringify(
+        {
+          nodes: [{ id: "hub", type: "text", text: "Hub", x: 0, y: 0, width: 320, height: 180 }],
+          edges: []
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
+    await runGit(repoRoot, ["add", "obsidian-repository/audit.md", "obsidian-repository/main.canvas"]);
+    await runGit(repoRoot, ["commit", "-m", "Add document store to main"]);
+
+    const prepared = await preparePromptWorktree({
+      repoRoot,
+      worktreeRoot,
+      automationBranch: "codex/mindmap",
+      promptId: "base-seed-123",
+      remoteName: "origin",
+      documentStoreDir: "obsidian-repository"
+    });
+
+    assert.equal(prepared.baseRef, "main");
+    assert.equal(prepared.remoteConfigured, false);
+    assert.equal(prepared.documentStoreSeedMode, "base");
+    assert.deepEqual(
+      prepared.documentStoreSeedPaths.sort(),
+      ["obsidian-repository/audit.md", "obsidian-repository/main.canvas"]
+    );
+    assert.equal(
+      await readFile(path.join(prepared.worktreePath, "obsidian-repository", "audit.md"), "utf8"),
+      "# Prompt Audit Log\n"
+    );
+    assert.match(
+      await readFile(path.join(prepared.worktreePath, "obsidian-repository", "main.canvas"), "utf8"),
+      /"id": "hub"/
+    );
+  } finally {
+    await rm(rootDirectory, { recursive: true, force: true });
+  }
+});
+
 test("preparePromptWorktree skips tracked paths matched by .gitignore during controller sync", async () => {
   const rootDirectory = await mkdtemp(path.join(os.tmpdir(), "schizm-git-worktree-ignore-"));
   const repoRoot = path.join(rootDirectory, "repo");

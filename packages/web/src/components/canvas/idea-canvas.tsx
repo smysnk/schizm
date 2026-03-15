@@ -40,6 +40,16 @@ import {
   PROMPT_ZEN_TERMINAL_TYPING_MS,
   PROMPT_ZEN_TERMINAL_WORKING_TICK_MS
 } from "./prompt-zen.constants";
+import {
+  buildPromptTerminalEntries,
+  buildPromptTerminalWorkingEntry,
+  getNextTypedTerminalEntries,
+  getPromptFailureDetails,
+  getPromptGitSummary,
+  getPromptTransitions,
+  terminalWorkingStatuses,
+  type PromptTerminalEntry
+} from "./prompt-terminal";
 import { ThemeToggle } from "../ui/theme-toggle";
 
 type PromptsResponse = {
@@ -80,22 +90,6 @@ type CreatePromptVariables = {
 type PromptHistoryFilter = "all" | "active" | "completed" | "failed" | "cancelled";
 type WorkspaceSurface = "prompt" | "history";
 
-type PromptTransitionRecord = {
-  status: string;
-  reason: string;
-  at: string;
-};
-
-type PromptTerminalTone = "user" | "system";
-type PromptTerminalKind = "user" | "ack" | "blank" | "status" | "git" | "failure";
-
-type PromptTerminalEntry = {
-  id: string;
-  text: string;
-  tone: PromptTerminalTone;
-  kind: PromptTerminalKind;
-};
-
 type PromptTerminalSession = {
   promptId: string;
   content: string;
@@ -129,31 +123,6 @@ const workspaceSurfaces: Array<{ id: WorkspaceSurface; label: string }> = [
 
 const repoLabel = "smysnk/schizsm";
 const repoUrl = "https://github.com/smysnk/schizsm";
-const terminalWorkingStatuses = new Set<PromptStatus>([
-  "scanning",
-  "deciding",
-  "writing",
-  "updating_canvas",
-  "auditing",
-  "committing",
-  "pushing",
-  "syncing_audit"
-]);
-
-const promptTerminalStatusMessages: Record<PromptStatus, string> = {
-  queued: "queued for isolated git + codex run",
-  cancelled: "run cancelled by operator",
-  scanning: "preparing isolated git worktree",
-  deciding: "assembling codex instruction payload",
-  writing: "running codex cli",
-  updating_canvas: "validating obsidian canvas updates",
-  auditing: "parsing codex output",
-  committing: "promoting prompt branch onto codex/mindmap",
-  pushing: "pushing codex/mindmap to origin",
-  syncing_audit: "syncing audit.md back into the prompt row",
-  completed: "run complete",
-  failed: "run failed"
-};
 
 const formatPromptStatus = (status: PromptStatus) => status.replace(/_/g, " ");
 
@@ -184,31 +153,6 @@ const readStringArray = (value: unknown) =>
   Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [];
-
-const getPromptTransitions = (prompt: PromptRecord): PromptTransitionRecord[] => {
-  const runner = readRecord(prompt.metadata.runner);
-  const transitions = runner?.statusTransitions;
-
-  if (!Array.isArray(transitions)) {
-    return [];
-  }
-
-  return transitions.flatMap((transition) => {
-    if (!isRecord(transition)) {
-      return [];
-    }
-
-    const status = readString(transition.status);
-    const at = readString(transition.at);
-    const reason = readString(transition.reason);
-
-    if (!status || !at) {
-      return [];
-    }
-
-    return [{ status, at, reason: reason || "No reason recorded." }];
-  });
-};
 
 const getLatestPromptTransition = (prompt: PromptRecord) => {
   const transitions = getPromptTransitions(prompt);
@@ -259,26 +203,9 @@ const getPromptAuditSummary = (prompt: PromptRecord) => {
   };
 };
 
-const getPromptFailureDetails = (prompt: PromptRecord) => {
-  const failure = readRecord(prompt.metadata.failure);
-  return {
-    stage: readString(failure?.stage),
-    message: readString(failure?.message) || prompt.errorMessage
-  };
-};
-
 const getPromptRecoveryNote = (prompt: PromptRecord) => {
   const recovery = readRecord(prompt.metadata.recovery);
   return readString(recovery?.note);
-};
-
-const getPromptGitSummary = (prompt: PromptRecord) => {
-  const audit = readRecord(prompt.audit);
-  const auditSync = readRecord(prompt.metadata.auditSync);
-  const branch = readString(audit?.branch) || readString(auditSync?.branch);
-  const sha = readString(audit?.sha) || readString(auditSync?.sha);
-
-  return { branch, sha };
 };
 
 const matchesPromptHistoryFilter = (prompt: PromptRecord, filter: PromptHistoryFilter) => {
@@ -345,134 +272,6 @@ const getRandomTypingDelay = (character: string) => {
   }
 
   return base;
-};
-
-const buildPromptTerminalEntries = (prompt: PromptRecord | null): PromptTerminalEntry[] => {
-  const entries: PromptTerminalEntry[] = [
-    {
-      id: "ack",
-      text: "OK",
-      tone: "system",
-      kind: "ack"
-    },
-    {
-      id: "spacer",
-      text: "",
-      tone: "system",
-      kind: "blank"
-    }
-  ];
-
-  const seenStatuses = new Set<PromptStatus>();
-  const pushStatusEntry = (status: PromptStatus) => {
-    if (seenStatuses.has(status)) {
-      return;
-    }
-
-    seenStatuses.add(status);
-    entries.push({
-      id: `status-${status}`,
-      text: `# ${promptTerminalStatusMessages[status]}`,
-      tone: "system",
-      kind: "status"
-    });
-  };
-
-  pushStatusEntry("queued");
-
-  if (!prompt) {
-    return entries;
-  }
-
-  for (const transition of getPromptTransitions(prompt)) {
-    const nextStatus = transition.status as PromptStatus;
-
-    if (nextStatus in promptTerminalStatusMessages) {
-      pushStatusEntry(nextStatus);
-    }
-  }
-
-  if (!seenStatuses.has(prompt.status) && prompt.status !== "queued") {
-    pushStatusEntry(prompt.status);
-  }
-
-  const failure = getPromptFailureDetails(prompt);
-  if (failure.message && prompt.status === "failed") {
-    entries.push({
-      id: "failure-detail",
-      text: `# error: ${failure.message}`,
-      tone: "system",
-      kind: "failure"
-    });
-  }
-
-  const git = getPromptGitSummary(prompt);
-  if (prompt.status === "completed" && (git.branch || git.sha)) {
-    entries.push({
-      id: "git-detail",
-      text: `# git: ${git.branch || "unknown branch"}${git.sha ? ` @ ${git.sha.slice(0, 8)}` : ""}`,
-      tone: "system",
-      kind: "git"
-    });
-  }
-
-  return entries;
-};
-
-const getNextTypedTerminalEntries = (
-  currentEntries: PromptTerminalEntry[],
-  targetEntries: PromptTerminalEntry[]
-) => {
-  for (let index = 0; index < targetEntries.length; index += 1) {
-    const currentEntry = currentEntries[index];
-    const targetEntry = targetEntries[index];
-
-    if (!currentEntry) {
-      return {
-        entries: [
-          ...currentEntries,
-          {
-            ...targetEntry,
-            text: targetEntry.text ? targetEntry.text.slice(0, 1) : ""
-          }
-        ],
-        delayMs: targetEntry.text ? PROMPT_ZEN_TERMINAL_TYPING_MS : PROMPT_ZEN_TERMINAL_LINE_PAUSE_MS
-      };
-    }
-
-    if (currentEntry.id !== targetEntry.id) {
-      return {
-        entries: [
-          ...currentEntries.slice(0, index),
-          {
-            ...targetEntry,
-            text: targetEntry.text ? targetEntry.text.slice(0, 1) : ""
-          }
-        ],
-        delayMs: targetEntry.text ? PROMPT_ZEN_TERMINAL_TYPING_MS : PROMPT_ZEN_TERMINAL_LINE_PAUSE_MS
-      };
-    }
-
-    if (currentEntry.text.length < targetEntry.text.length) {
-      const nextText = targetEntry.text.slice(0, currentEntry.text.length + 1);
-      return {
-        entries: [
-          ...currentEntries.slice(0, index),
-          {
-            ...targetEntry,
-            text: nextText
-          },
-          ...currentEntries.slice(index + 1)
-        ],
-        delayMs:
-          nextText.length === targetEntry.text.length
-            ? PROMPT_ZEN_TERMINAL_LINE_PAUSE_MS
-            : PROMPT_ZEN_TERMINAL_TYPING_MS
-      };
-    }
-  }
-
-  return null;
 };
 
 function GitHubMark() {
@@ -628,12 +427,7 @@ export function IdeaCanvas() {
         terminalWorkingStatuses.has(promptTerminalPrompt.status)
     );
   const promptTerminalWorkingEntry = promptTerminalShouldShowWorking
-    ? {
-        id: `working-${promptTerminalPrompt?.id || "prompt"}-${promptTerminalPrompt?.status || "active"}`,
-        text: `# Working${".".repeat(promptTerminalWorkingDots)}`,
-        tone: "system" as const,
-        kind: "status" as const
-      }
+    ? buildPromptTerminalWorkingEntry(promptTerminalPrompt, promptTerminalWorkingDots)
     : null;
   const promptTerminalStatusCount = typedPromptTerminalEntries.filter(
     (entry) => entry.kind === "status" || entry.kind === "failure" || entry.kind === "git"
@@ -720,7 +514,9 @@ export function IdeaCanvas() {
 
     const nextStep = getNextTypedTerminalEntries(
       typedPromptTerminalEntries,
-      promptTerminalTargetEntries
+      promptTerminalTargetEntries,
+      PROMPT_ZEN_TERMINAL_TYPING_MS,
+      PROMPT_ZEN_TERMINAL_LINE_PAUSE_MS
     );
 
     if (!nextStep) {

@@ -103,3 +103,56 @@ test("validateCanvasState flags canvas edges that reference missing nodes", asyn
     await rm(repoRoot, { recursive: true, force: true });
   }
 });
+
+test("validateCanvasState reports malformed canvas JSON clearly", async () => {
+  const repoRoot = await createTempDirectory();
+  const knowledgeRoot = path.join(repoRoot, "obsidian-repository");
+
+  try {
+    await mkdir(knowledgeRoot, { recursive: true });
+    await writeFile(path.join(knowledgeRoot, "main.canvas"), "{not valid json", "utf8");
+
+    const report = await validateCanvasState({ repoRoot, knowledgeRoot });
+
+    assert.equal(report.valid, false);
+    assert.ok(
+      report.issues.some((issue) => issue.message.includes("Canvas file could not be parsed"))
+    );
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
+
+test("validateCanvasState flags duplicate node ids and invalid coordinates", async () => {
+  const repoRoot = await createTempDirectory();
+  const knowledgeRoot = path.join(repoRoot, "obsidian-repository");
+
+  try {
+    await mkdir(knowledgeRoot, { recursive: true });
+    await writeFile(
+      path.join(knowledgeRoot, "main.canvas"),
+      JSON.stringify(
+        {
+          nodes: [
+            { id: "hub", type: "text", text: "Hub", x: 0, y: 0, width: 320, height: 180 },
+            { id: "hub", type: "file", file: "README.md", x: "bad", y: 0, width: 320, height: 180 }
+          ],
+          edges: []
+        },
+        null,
+        2
+      ),
+      "utf8"
+    );
+
+    const report = await validateCanvasState({ repoRoot, knowledgeRoot });
+
+    assert.equal(report.valid, false);
+    assert.ok(report.issues.some((issue) => issue.message.includes('Node id "hub" is duplicated')));
+    assert.ok(
+      report.issues.some((issue) => issue.message.includes('Node "hub" has a non-numeric x'))
+    );
+  } finally {
+    await rm(repoRoot, { recursive: true, force: true });
+  }
+});
