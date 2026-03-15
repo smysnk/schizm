@@ -17,23 +17,47 @@ export default {
   },
   execution: {
     continueOnError: true,
-    defaultCoverage: false
+    defaultCoverage: true
+  },
+  manifests: {
+    classification: "./test-modules.json",
+    coverageAttribution: "./test-modules.json",
+    ownership: "./test-modules.json"
+  },
+  enrichers: {
+    sourceAnalysis: {
+      enabled: true
+    }
   },
   render: {
     html: true,
     console: true,
-    defaultView: "package"
+    defaultView: "module",
+    includeDetailedAnalysisToggle: true
   },
   suites: [
     {
-      id: "server-tests",
-      label: "Server tests",
-      adapter: "shell",
+      id: "server-canvas-validator",
+      label: "Canvas validator",
+      adapter: "node-test",
       package: "server",
       cwd: rootDir,
-      command: ["yarn", "workspace", "server", "test"],
+      command: ["node", "--import", "tsx", "--test", "packages/server/src/services/canvas-validator.test.ts"],
       coverage: {
-        enabled: false
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "server-git-worktree",
+      label: "Git worktree",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: ["node", "--import", "tsx", "--test", "packages/server/src/services/git-worktree.test.ts"],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
       }
     },
     {
@@ -45,6 +69,18 @@ export default {
       command: ["python3", "-m", "unittest", "discover", "-s", "docs/demo", "-p", "test_*.py"],
       coverage: {
         enabled: false
+      }
+    },
+    {
+      id: "web-prompt-terminal-unit",
+      label: "Prompt terminal unit",
+      adapter: "node-test",
+      package: "web",
+      cwd: rootDir,
+      command: ["node", "--import", "tsx", "--test", "packages/web/src/components/canvas/prompt-terminal.test.ts"],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
       }
     },
     {

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev -p ${WEB_PORT:-3000}",
     "build": "next build",
-    "start": "next start -p ${WEB_PORT:-3000}"
+    "start": "next start -p ${WEB_PORT:-3000}",
+    "test:unit": "node --import tsx --test src/components/canvas/prompt-terminal.test.ts"
   },
   "dependencies": {
     "@apollo/client": "^3.12.6",

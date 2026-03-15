@@ -8,7 +8,9 @@
     "build": "tsup src/index.ts --format cjs --target node20 --out-dir dist --clean",
     "start": "node dist/index.js",
     "migrate": "tsx src/index.ts --migrate-only",
-    "test": "tsx --test src/**/*.test.ts"
+    "test": "tsx --test src/**/*.test.ts",
+    "test:canvas": "node --import tsx --test src/services/canvas-validator.test.ts",
+    "test:git-worktree": "node --import tsx --test src/services/git-worktree.test.ts"
   },
   "dependencies": {
     "@apollo/server": "^4.10.0",

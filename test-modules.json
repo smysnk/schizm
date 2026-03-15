@@ -1,0 +1,68 @@
+{
+  "rules": [
+    {
+      "package": "repo",
+      "include": ["docs/demo/test_renderers.py"],
+      "module": "demo",
+      "theme": "renderers"
+    },
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/canvas-validator.test.ts"],
+      "module": "automation",
+      "theme": "canvas"
+    },
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/git-worktree.test.ts"],
+      "module": "automation",
+      "theme": "git"
+    },
+    {
+      "package": "web",
+      "include": ["packages/web/src/components/canvas/prompt-terminal.test.ts"],
+      "module": "web",
+      "theme": "prompt"
+    },
+    {
+      "package": "web",
+      "include": ["e2e/**/*.spec.ts"],
+      "module": "web",
+      "theme": "e2e"
+    }
+  ],
+  "coverageRules": [
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/canvas-validator.ts"],
+      "module": "automation",
+      "theme": "canvas"
+    },
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/git-worktree.ts"],
+      "module": "automation",
+      "theme": "git"
+    },
+    {
+      "package": "web",
+      "include": ["packages/web/src/components/canvas/prompt-terminal.ts"],
+      "module": "web",
+      "theme": "prompt"
+    }
+  ],
+  "ownership": {
+    "modules": [
+      { "module": "automation", "owner": "smysnk" },
+      { "module": "demo", "owner": "smysnk" },
+      { "module": "web", "owner": "smysnk" }
+    ],
+    "themes": [
+      { "module": "automation", "theme": "canvas", "owner": "smysnk" },
+      { "module": "automation", "theme": "git", "owner": "smysnk" },
+      { "module": "demo", "theme": "renderers", "owner": "smysnk" },
+      { "module": "web", "theme": "prompt", "owner": "smysnk" },
+      { "module": "web", "theme": "e2e", "owner": "smysnk" }
+    ]
+  }
+}
