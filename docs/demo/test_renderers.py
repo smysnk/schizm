@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parent
@@ -91,6 +93,21 @@ class DemoRendererTests(unittest.TestCase):
         cleared_frame = render_placeholder_demo.render_prompt_frame(blank_prompt, font, layout, "")
 
         self.assertEqual(frames[-1].tobytes(), cleared_frame.tobytes())
+
+    def test_placeholder_demo_falls_back_when_raw_prompt_png_is_missing(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            fallback_raw_dir = Path(temp_dir)
+
+            with patch.object(render_placeholder_demo, "RAW_DIR", fallback_raw_dir):
+                frame = render_placeholder_demo.load_prompt_frame()
+                layout = render_placeholder_demo.load_layout()
+                frames = render_placeholder_demo.build_sequence()
+
+            self.assertEqual(frame.mode, "RGBA")
+            self.assertGreater(frame.size[0], 0)
+            self.assertGreater(frame.size[1], 0)
+            self.assertGreater(layout["content_width"], 0)
+            self.assertTrue(frames)
 
 
 if __name__ == "__main__":

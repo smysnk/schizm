@@ -1,0 +1,21 @@
+defaultNamespace: schizm
+
+helm:
+  releaseName: schizm
+  chart: ./fleet/schizm
+  values:
+    image:
+      tag: main
+    global:
+      publicDomain: "schizm.smysnk.com"
+    api:
+      existingSecret: schizm-runtime-secret
+    web:
+      ingress:
+        enabled: true
+        className: traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+        tls:
+          enabled: true
+          secretName: tls-schizm-smysnk-com

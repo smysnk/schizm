@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 from dataclasses import dataclass
@@ -43,6 +44,27 @@ PROMPT_ZEN_PLACEHOLDER_QUESTIONS = [
 PLACEHOLDER_TYPING_DELAY_MS = 92
 PROMPT_ZEN_TYPING_END_PAUSE_MS = 1800
 PROMPT_ZEN_TYPING_START_PAUSE_MS = 260
+DEFAULT_METRICS = {
+    "form": {
+        "left": 340,
+        "top": 308.5,
+        "width": 760,
+        "height": 347,
+        "right": 1100,
+        "bottom": 655.5,
+    },
+    "textarea": {
+        "left": 341,
+        "top": 309.5,
+        "width": 758,
+        "height": 340,
+        "right": 1099,
+        "bottom": 649.5,
+    },
+    "paddingX": 38,
+    "paddingY": 34,
+    "innerInset": 12,
+}
 
 
 @dataclass(frozen=True)
@@ -65,14 +87,51 @@ def ensure_prompt_font() -> Path:
     return PROMPT_FONT_PATH
 
 
+def load_metrics() -> dict[str, object]:
+    metrics_path = RAW_DIR / "metrics.json"
+    if metrics_path.exists():
+        return json.loads(metrics_path.read_text())
+
+    return DEFAULT_METRICS
+
+
+def create_synthetic_prompt_frame(metrics: dict[str, object]) -> Image.Image:
+    form = metrics["form"]
+    inner_inset = int(round(metrics.get("innerInset", 12)))
+    canvas_width = int(round(form["left"] * 2 + form["width"]))
+    canvas_height = int(round(form["top"] * 2 + form["height"]))
+    frame = Image.new("RGBA", (canvas_width, canvas_height), (9, 17, 22, 255))
+    draw = ImageDraw.Draw(frame)
+
+    form_box = (
+        int(round(form["left"])),
+        int(round(form["top"])),
+        int(round(form["right"])),
+        int(round(form["bottom"])),
+    )
+    inner_box = (
+        form_box[0] + inner_inset,
+        form_box[1] + inner_inset,
+        form_box[2] - inner_inset,
+        form_box[3] - inner_inset,
+    )
+
+    draw.rounded_rectangle(form_box, radius=16, fill=(8, 27, 13, 255), outline=(56, 117, 56, 255), width=3)
+    draw.rounded_rectangle(inner_box, radius=14, fill=(5, 20, 9, 255), outline=(33, 83, 33, 255), width=2)
+
+    return frame
+
+
 def load_prompt_frame() -> Image.Image:
-    return Image.open(RAW_DIR / "landing-focused-blank.png").convert("RGBA")
+    prompt_frame_path = RAW_DIR / "landing-focused-blank.png"
+    if prompt_frame_path.exists():
+        return Image.open(prompt_frame_path).convert("RGBA")
+
+    return create_synthetic_prompt_frame(load_metrics())
 
 
 def load_layout() -> dict[str, int]:
-    import json
-
-    metrics = json.loads((RAW_DIR / "metrics.json").read_text())
+    metrics = load_metrics()
     textarea = metrics["textarea"]
     return {
         "content_left": int(round(textarea["left"] + metrics["paddingX"])),

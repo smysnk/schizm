@@ -1,0 +1,77 @@
+global:
+  publicScheme: https
+  publicDomain: "schizm.smysnk.com"
+
+image:
+  repository: 222634406587.dkr.ecr.us-east-1.amazonaws.com/schizm
+  tag: main
+  pullPolicy: Always
+  pullSecrets: []
+
+api:
+  replicaCount: 1
+  args:
+    - api
+  existingConfigMap: ""
+  existingSecret: "schizm-runtime-secret"
+  service:
+    type: ClusterIP
+    port: 4000
+    nodePort: null
+  ingressPaths:
+    - path: /graphql
+      pathType: Prefix
+    - path: /health
+      pathType: Exact
+  config:
+    NODE_ENV: production
+    PORT: "4000"
+    SERVER_PORT: "4000"
+    SERVER_URL: "https://schizm.smysnk.com"
+    GRAPHQL_ENDPOINT: "/graphql"
+    GRAPHQL_WS_URL: "wss://schizm.smysnk.com/graphql"
+    DOCUMENT_STORE_DIR: "obsidian-repository"
+    PROMPT_RUNNER_ENABLED: "false"
+    SEED_DEMO_GRAPH: "false"
+  secret: {}
+  podAnnotations: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+web:
+  replicaCount: 1
+  args:
+    - web
+  existingConfigMap: ""
+  existingSecret: ""
+  service:
+    type: ClusterIP
+    port: 3000
+    nodePort: null
+  config:
+    NODE_ENV: production
+    WEB_PORT: "3000"
+    GRAPHQL_ENDPOINT: "/graphql"
+    SERVER_URL: "http://schizm-api:4000"
+    GRAPHQL_WS_URL: "wss://schizm.smysnk.com/graphql"
+  secret: {}
+  podAnnotations: {}
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  ingress:
+    enabled: true
+    className: "traefik"
+    annotations:
+      cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    host: "schizm.smysnk.com"
+    path: /
+    pathType: Prefix
+    hosts: []
+    tls:
+      enabled: true
+      secretName: "tls-schizm-smysnk-com"
+      hosts: []

@@ -140,3 +140,38 @@ jobs:
             echo "No log file found at ${{ steps.test_report.outputs.log_path }}"
           fi
           exit 1
+
+  docker-image:
+    needs: test
+    if: ${{ needs.test.result == 'success' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    uses: ./.github/workflows/image-build.yml
+    with:
+      image_tag: main
+      push_image: true
+    secrets: inherit
+
+  fleet-deploy:
+    needs: docker-image
+    if: ${{ needs.docker-image.result == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Write Fleet kubeconfig
+        shell: bash
+        env:
+          FLEET_KUBECONFIG: ${{ secrets.FLEET_KUBECONFIG }}
+        run: |
+          test -n "$FLEET_KUBECONFIG" || { echo "Missing FLEET_KUBECONFIG secret"; exit 1; }
+          kubeconfig_path="${RUNNER_TEMP}/fleet-kubeconfig"
+          printf '%s' "$FLEET_KUBECONFIG" > "$kubeconfig_path"
+          chmod 600 "$kubeconfig_path"
+          echo "KUBECONFIG_PATH=$kubeconfig_path" >> "$GITHUB_ENV"
+
+      - name: Deploy Fleet bundle and restart workloads
+        run: ./scripts/deploy-fleet.sh --kubeconfig "$KUBECONFIG_PATH" --restart

@@ -1,0 +1,32 @@
+{{- if not .Values.web.existingConfigMap }}
+{{- $config := dict -}}
+{{- range $key, $value := default (dict) .Values.web.config }}
+{{- $_ := set $config $key $value -}}
+{{- end }}
+{{- if or (not (hasKey $config "NODE_ENV")) (eq (printf "%v" (index $config "NODE_ENV")) "") }}
+{{- $_ := set $config "NODE_ENV" "production" -}}
+{{- end }}
+{{- if or (not (hasKey $config "WEB_PORT")) (eq (printf "%v" (index $config "WEB_PORT")) "") }}
+{{- $_ := set $config "WEB_PORT" (printf "%v" .Values.web.service.port) -}}
+{{- end }}
+{{- if or (not (hasKey $config "GRAPHQL_ENDPOINT")) (eq (printf "%v" (index $config "GRAPHQL_ENDPOINT")) "") }}
+{{- $_ := set $config "GRAPHQL_ENDPOINT" "/graphql" -}}
+{{- end }}
+{{- if or (not (hasKey $config "SERVER_URL")) (eq (printf "%v" (index $config "SERVER_URL")) "") }}
+{{- $_ := set $config "SERVER_URL" (include "schizm.apiInternalUrl" . | trim) -}}
+{{- end }}
+{{- if or (not (hasKey $config "GRAPHQL_WS_URL")) (eq (printf "%v" (index $config "GRAPHQL_WS_URL")) "") }}
+{{- $_ := set $config "GRAPHQL_WS_URL" (include "schizm.publicWebSocketUrl" . | trim) -}}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "schizm.webConfigMapName" . }}
+  labels:
+    {{- include "schizm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: web
+data:
+  {{- range $key := keys $config | sortAlpha }}
+  {{ $key }}: {{ printf "%v" (index $config $key) | quote }}
+  {{- end }}
+{{- end }}

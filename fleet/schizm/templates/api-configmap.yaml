@@ -1,0 +1,41 @@
+{{- if not .Values.api.existingConfigMap }}
+{{- $config := dict -}}
+{{- range $key, $value := default (dict) .Values.api.config }}
+{{- $_ := set $config $key $value -}}
+{{- end }}
+{{- if or (not (hasKey $config "NODE_ENV")) (eq (printf "%v" (index $config "NODE_ENV")) "") }}
+{{- $_ := set $config "NODE_ENV" "production" -}}
+{{- end }}
+{{- if or (not (hasKey $config "PORT")) (eq (printf "%v" (index $config "PORT")) "") }}
+{{- $_ := set $config "PORT" (printf "%v" .Values.api.service.port) -}}
+{{- end }}
+{{- if or (not (hasKey $config "SERVER_PORT")) (eq (printf "%v" (index $config "SERVER_PORT")) "") }}
+{{- $_ := set $config "SERVER_PORT" (printf "%v" .Values.api.service.port) -}}
+{{- end }}
+{{- if or (not (hasKey $config "SERVER_URL")) (eq (printf "%v" (index $config "SERVER_URL")) "") }}
+{{- $_ := set $config "SERVER_URL" (printf "%s://%s" (include "schizm.publicScheme" . | trim) (include "schizm.publicDomain" . | trim)) -}}
+{{- end }}
+{{- if or (not (hasKey $config "GRAPHQL_ENDPOINT")) (eq (printf "%v" (index $config "GRAPHQL_ENDPOINT")) "") }}
+{{- $_ := set $config "GRAPHQL_ENDPOINT" "/graphql" -}}
+{{- end }}
+{{- if or (not (hasKey $config "GRAPHQL_WS_URL")) (eq (printf "%v" (index $config "GRAPHQL_WS_URL")) "") }}
+{{- $_ := set $config "GRAPHQL_WS_URL" (include "schizm.publicWebSocketUrl" . | trim) -}}
+{{- end }}
+{{- if or (not (hasKey $config "PROMPT_RUNNER_ENABLED")) (eq (printf "%v" (index $config "PROMPT_RUNNER_ENABLED")) "") }}
+{{- $_ := set $config "PROMPT_RUNNER_ENABLED" "false" -}}
+{{- end }}
+{{- if or (not (hasKey $config "SEED_DEMO_GRAPH")) (eq (printf "%v" (index $config "SEED_DEMO_GRAPH")) "") }}
+{{- $_ := set $config "SEED_DEMO_GRAPH" "false" -}}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "schizm.apiConfigMapName" . }}
+  labels:
+    {{- include "schizm.labels" . | nindent 4 }}
+    app.kubernetes.io/component: api
+data:
+  {{- range $key := keys $config | sortAlpha }}
+  {{ $key }}: {{ printf "%v" (index $config $key) | quote }}
+  {{- end }}
+{{- end }}

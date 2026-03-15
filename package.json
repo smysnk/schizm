@@ -6,6 +6,8 @@
     "packages/*"
   ],
   "scripts": {
+    "aws:create-ecr": "./scripts/create-ecr-repositories.sh",
+    "docker:build": "docker build -f docker/Dockerfile -t schizm:local .",
     "dev": "./scripts/mono-helper.sh dev mono-helper.yml",
     "build": "yarn workspaces foreach -A -t run build",
     "start": "./scripts/mono-helper.sh env yarn workspaces foreach -A -p -i run start",
@@ -17,12 +19,21 @@
     "build:server": "yarn workspace server build",
     "start:server": "./scripts/mono-helper.sh env yarn workspace server start",
     "migrate": "./scripts/mono-helper.sh env yarn workspace server migrate",
+    "fleet:env-secret": "./scripts/apply-fleet-env-secret.sh",
+    "fleet:gitrepo-secret": "./scripts/apply-fleet-gitrepo-ssh-secret.sh",
+    "fleet:kubeconfig": "./scripts/create-fleet-kubeconfig.sh",
+    "fleet:deploy": "./scripts/deploy-fleet.sh",
+    "fleet:lint": "helm lint ./fleet/schizm",
+    "fleet:monitor": "./scripts/monitor-deployment-output.sh",
+    "fleet:recycle": "./scripts/recycle-and-monitor.sh",
+    "fleet:template": "helm template schizm ./fleet/schizm --values ./fleet/schizm/values.yaml",
     "test": "test-station run --config ./test-station.config.mjs",
     "test:coverage": "test-station run --config ./test-station.config.mjs --coverage",
     "test:fast": "test-station run --config ./test-station.config.mjs --no-coverage",
     "test:server": "yarn workspace server test",
     "test:demo": "python3 -m unittest discover -s docs/demo -p 'test_*.py'",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:report:publish": "node ./scripts/publish-ingest-report.mjs --input ./.test-results/schizm-test-report/report.json"
   },
   "devDependencies": {
     "@playwright/test": "^1.55.0",
