@@ -38,7 +38,7 @@ test("verifyContainerDocumentRepoPush confirms a committed and pushed branch", a
     await runGit(seedRoot, ["remote", "add", "origin", remoteRoot]);
     await runGit(seedRoot, ["push", "-u", "origin", "main"]);
 
-    await runGit(rootDirectory, ["clone", remoteRoot, cloneRoot]);
+    await runGit(rootDirectory, ["clone", "--branch", "main", remoteRoot, cloneRoot]);
     await runGit(cloneRoot, ["config", "user.name", "Schizm Tests"]);
     await runGit(cloneRoot, ["config", "user.email", "schizm-tests@example.com"]);
 
@@ -81,7 +81,7 @@ test("verifyContainerDocumentRepoPush rejects commits that were not pushed", asy
     await runGit(seedRoot, ["remote", "add", "origin", remoteRoot]);
     await runGit(seedRoot, ["push", "-u", "origin", "main"]);
 
-    await runGit(rootDirectory, ["clone", remoteRoot, cloneRoot]);
+    await runGit(rootDirectory, ["clone", "--branch", "main", remoteRoot, cloneRoot]);
     await runGit(cloneRoot, ["config", "user.name", "Schizm Tests"]);
     await runGit(cloneRoot, ["config", "user.email", "schizm-tests@example.com"]);
 
