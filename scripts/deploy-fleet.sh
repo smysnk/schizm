@@ -14,7 +14,7 @@ Options:
   --gitrepo-file <path>      Fleet GitRepo manifest (default: fleet/gitrepo.yml)
   --fleet-namespace <name>   Fleet namespace for GitRepo (default: GitRepo metadata namespace)
   --name <name>              GitRepo resource name to watch (default: GitRepo metadata name)
-  --app-namespace <name>     Application namespace to check (default: fleet.yaml defaultNamespace)
+  --app-namespace <name>     Application namespace to check (default: fleet/fleet.yaml defaultNamespace)
   --web <deployment>         Web deployment to check (default: <releaseName>-web)
   --api <deployment>         API deployment to check (default: <releaseName>-api)
   --kubeconfig <path>        Optional KUBECONFIG path

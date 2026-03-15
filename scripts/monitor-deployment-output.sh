@@ -11,7 +11,7 @@ Usage:
   monitor-deployment-output.sh [options]
 
 Options:
-  --namespace <name>         Kubernetes namespace (default: fleet.yaml defaultNamespace)
+  --namespace <name>         Kubernetes namespace (default: fleet/fleet.yaml defaultNamespace)
   --web <deployment>         Web deployment name (default: <releaseName>-web)
   --api <deployment>         API deployment name (default: <releaseName>-api)
   --events-tail <count>      Number of recent events to print (default: 40)

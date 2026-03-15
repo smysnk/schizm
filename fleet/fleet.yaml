@@ -2,7 +2,7 @@ defaultNamespace: schizm
 
 helm:
   releaseName: schizm
-  chart: ./fleet/schizm
+  chart: ./schizm
   values:
     image:
       tag: main

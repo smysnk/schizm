@@ -11,7 +11,7 @@ Usage:
   recycle-and-monitor.sh [options]
 
 Options:
-  --namespace <name>         Kubernetes namespace (default: fleet.yaml defaultNamespace)
+  --namespace <name>         Kubernetes namespace (default: fleet/fleet.yaml defaultNamespace)
   --web <deployment>         Web deployment name (default: <releaseName>-web)
   --api <deployment>         API deployment name (default: <releaseName>-api)
   --help                     Show this help

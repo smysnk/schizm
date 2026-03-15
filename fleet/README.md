@@ -1,10 +1,10 @@
 # Fleet deployment
 
-The Fleet bundle for this repo lives in `fleet/schizm`.
+The Fleet bundle for this repo lives entirely under `fleet/`.
 
 ## Files
 
-- `fleet.yaml`: Fleet release defaults
+- `fleet/fleet.yaml`: Fleet release defaults
 - `fleet/gitrepo.yml`: concrete GitRepo manifest for `smysnk/schizsm`
 - `fleet/gitrepo.example.yml`: starter manifest for other repos or clusters
 - `.env.fleet.example`: starter runtime secret file for production API secrets
@@ -27,7 +27,7 @@ deployments to finish rolling out.
 
 ## Runtime Secret
 
-`fleet.yaml` points the API deployment at the shared runtime secret
+`fleet/fleet.yaml` points the API deployment at the shared runtime secret
 `schizm-runtime-secret`.
 
 Create it from an env file with:

@@ -12,7 +12,7 @@ Usage:
 
 Options:
   --fleet-namespace <name>       Namespace that contains the Fleet GitRepo (default: fleet/gitrepo.yml metadata.namespace)
-  --app-namespace <name>         Namespace that contains the application deployments (default: fleet.yaml defaultNamespace)
+  --app-namespace <name>         Namespace that contains the application deployments (default: fleet/fleet.yaml defaultNamespace)
   --service-account <name>       Service account name to create (default: <releaseName>-fleet-deployer)
   --service-account-namespace <name>
                                  Namespace for the service account (default: Fleet namespace)

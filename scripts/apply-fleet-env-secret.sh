@@ -12,8 +12,8 @@ Usage:
 
 Options:
   --env-file <path>          Path to env file (default: .env.fleet)
-  --namespace <name>         Kubernetes namespace (default: fleet.yaml defaultNamespace)
-  --secret-name <name>       Kubernetes secret name (default: fleet.yaml existingSecret)
+  --namespace <name>         Kubernetes namespace (default: fleet/fleet.yaml defaultNamespace)
+  --secret-name <name>       Kubernetes secret name (default: fleet/fleet.yaml existingSecret)
   --kubeconfig <path>        Optional KUBECONFIG path
   --create-namespace         Create namespace if it does not exist
   --dry-run                  Render secret YAML and print to stdout only

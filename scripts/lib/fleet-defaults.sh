@@ -4,7 +4,7 @@ set -euo pipefail
 
 _fleet_lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${_fleet_lib_dir}/../.." && pwd)"
-FLEET_FILE="${FLEET_FILE:-${REPO_ROOT}/fleet.yaml}"
+FLEET_FILE="${FLEET_FILE:-${REPO_ROOT}/fleet/fleet.yaml}"
 GITREPO_FILE="${GITREPO_FILE:-${REPO_ROOT}/fleet/gitrepo.yml}"
 
 trim_quotes() {
