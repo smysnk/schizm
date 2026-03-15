@@ -3,6 +3,22 @@
 {{- $host := .Values.web.ingress.host | default (include "schizm.publicDomain" . | trim) -}}
 {{- $apiPaths := default (list) .Values.api.ingressPaths -}}
 {{- $tls := default (dict) .Values.web.ingress.tls -}}
+{{- $annotations := dict -}}
+{{- with .Values.web.ingress.annotations }}
+  {{- range $key, $value := . }}
+    {{- $_ := set $annotations $key $value -}}
+  {{- end }}
+{{- end }}
+{{- $httpsRedirect := default (dict) .Values.web.ingress.httpsRedirect -}}
+{{- if and (default false $httpsRedirect.enabled) (eq (.Values.web.ingress.className | default "") "traefik") -}}
+  {{- $middlewareRef := printf "%s@kubernetescrd" (include "schizm.httpsRedirectMiddlewareQualifiedName" . | trim) -}}
+  {{- $existingMiddlewares := get $annotations "traefik.ingress.kubernetes.io/router.middlewares" | default "" -}}
+  {{- if $existingMiddlewares -}}
+    {{- $_ := set $annotations "traefik.ingress.kubernetes.io/router.middlewares" (printf "%s,%s" $existingMiddlewares $middlewareRef) -}}
+  {{- else -}}
+    {{- $_ := set $annotations "traefik.ingress.kubernetes.io/router.middlewares" $middlewareRef -}}
+  {{- end -}}
+{{- end -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -10,9 +26,9 @@ metadata:
   labels:
     {{- include "schizm.labels" . | nindent 4 }}
     app.kubernetes.io/component: web
-  {{- with .Values.web.ingress.annotations }}
+  {{- if gt (len $annotations) 0 }}
   annotations:
-    {{- toYaml . | nindent 4 }}
+    {{- toYaml $annotations | nindent 4 }}
   {{- end }}
 spec:
   {{- if .Values.web.ingress.className }}

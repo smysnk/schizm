@@ -2,7 +2,10 @@ import { execFile } from "node:child_process";
 import { promises as fs } from "node:fs";
 import { promisify } from "node:util";
 import path from "node:path";
-import { env } from "../packages/server/src/config/env";
+import {
+  env,
+  resolveDocumentStoreRoot
+} from "../packages/server/src/config/env";
 import { pool, query } from "../packages/server/src/db/pool";
 import type {
   JsonObject,
@@ -305,7 +308,7 @@ const buildAuditPayload = ({
 export const syncPromptAudit = async ({
   promptId,
   repoRoot = env.promptRunnerRepoRoot,
-  auditPath = path.join(repoRoot, env.documentStoreDir, "audit.md")
+  auditPath = path.join(resolveDocumentStoreRoot(repoRoot), "audit.md")
 }: SyncPromptAuditOptions): Promise<SyncPromptAuditResult> => {
   const auditSource = await fs.readFile(auditPath, "utf8");
   const { sectionStartMarker, sectionEndMarker, rawSection } = extractAuditSection(

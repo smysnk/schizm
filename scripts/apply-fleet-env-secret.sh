@@ -17,8 +17,14 @@ Options:
   --kubeconfig <path>        Optional KUBECONFIG path
   --create-namespace         Create namespace if it does not exist
   --dry-run                  Render secret YAML and print to stdout only
+  --codex-auth-file <path>   Path to Codex auth.json to encode into CODEX_AUTH_JSON_BASE64
+  --ssh-key-file <path>      Path to SSH private key to encode into DOCUMENT_STORE_SSH_PRIVATE_KEY_BASE64
   --help                     Show this help
 USAGE
+}
+
+base64_no_wrap() {
+  base64 | tr -d '\n'
 }
 
 ENV_FILE="${REPO_ROOT}/.env.fleet"
@@ -27,6 +33,8 @@ SECRET_NAME="$(runtime_secret_name)"
 KUBECONFIG_PATH=""
 CREATE_NAMESPACE="false"
 DRY_RUN="false"
+CODEX_AUTH_FILE="${CODEX_AUTH_JSON_PATH:-${CODEX_HOME:-$HOME/.codex}/auth.json}"
+SSH_KEY_FILE="${DOCUMENT_STORE_SSH_KEY_PATH:-$HOME/.ssh/id_ed25519}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -53,6 +61,14 @@ while [[ $# -gt 0 ]]; do
     --dry-run)
       DRY_RUN="true"
       shift
+      ;;
+    --codex-auth-file)
+      CODEX_AUTH_FILE="${2:-}"
+      shift 2
+      ;;
+    --ssh-key-file)
+      SSH_KEY_FILE="${2:-}"
+      shift 2
       ;;
     --help|-h)
       usage
@@ -81,7 +97,8 @@ if [[ -n "$KUBECONFIG_PATH" ]]; then
 fi
 
 TMP_ENV="$(mktemp)"
-trap 'rm -f "$TMP_ENV"' EXIT
+TMP_ENV_FILTERED=""
+trap 'rm -f "$TMP_ENV" "${TMP_ENV_FILTERED:-}"' EXIT
 
 while IFS= read -r line || [[ -n "$line" ]]; do
   line="${line#${line%%[![:space:]]*}}"
@@ -102,6 +119,26 @@ while IFS= read -r line || [[ -n "$line" ]]; do
 
   echo "$line" >> "$TMP_ENV"
 done < "$ENV_FILE"
+
+if [[ -f "$CODEX_AUTH_FILE" ]]; then
+  CODEX_AUTH_ENCODED="$(base64_no_wrap < "$CODEX_AUTH_FILE")"
+  TMP_ENV_FILTERED="$(mktemp)"
+  grep -v '^CODEX_AUTH_JSON_BASE64=' "$TMP_ENV" > "$TMP_ENV_FILTERED" || true
+  mv "$TMP_ENV_FILTERED" "$TMP_ENV"
+  TMP_ENV_FILTERED=""
+  printf 'CODEX_AUTH_JSON_BASE64=%s\n' "$CODEX_AUTH_ENCODED" >> "$TMP_ENV"
+  echo "Injected CODEX_AUTH_JSON_BASE64 from $CODEX_AUTH_FILE"
+fi
+
+if [[ -f "$SSH_KEY_FILE" ]]; then
+  SSH_KEY_ENCODED="$(base64_no_wrap < "$SSH_KEY_FILE")"
+  TMP_ENV_FILTERED="$(mktemp)"
+  grep -v '^DOCUMENT_STORE_SSH_PRIVATE_KEY_BASE64=' "$TMP_ENV" > "$TMP_ENV_FILTERED" || true
+  mv "$TMP_ENV_FILTERED" "$TMP_ENV"
+  TMP_ENV_FILTERED=""
+  printf 'DOCUMENT_STORE_SSH_PRIVATE_KEY_BASE64=%s\n' "$SSH_KEY_ENCODED" >> "$TMP_ENV"
+  echo "Injected DOCUMENT_STORE_SSH_PRIVATE_KEY_BASE64 from $SSH_KEY_FILE"
+fi
 
 if [[ ! -s "$TMP_ENV" ]]; then
   echo "Error: no key/value entries found in $ENV_FILE" >&2

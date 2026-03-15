@@ -100,3 +100,11 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- define "schizm.apiInternalUrl" -}}
 {{- printf "http://%s:%v" (include "schizm.apiName" .) .Values.api.service.port -}}
 {{- end -}}
+
+{{- define "schizm.httpsRedirectMiddlewareName" -}}
+{{- printf "%s-https-redirect" (include "schizm.webName" .) -}}
+{{- end -}}
+
+{{- define "schizm.httpsRedirectMiddlewareQualifiedName" -}}
+{{- printf "%s-%s" .Release.Namespace (include "schizm.httpsRedirectMiddlewareName" .) -}}
+{{- end -}}

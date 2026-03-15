@@ -55,6 +55,20 @@ If you would like to observe the early stages of synthetic editorial consciousne
 
 The root `dev` script runs through [mono-helper.yml](mono-helper.yml), and the runtime wrappers live in [scripts/mono-helper.sh](scripts/mono-helper.sh). `.env` is loaded first, then `mono-helper` assigns the first available `WEB_PORT` and `SERVER_PORT` block starting at `3000`. If the web app needs to target an external API instead of the local server, set `SERVER_URL` in `.env`.
 
+## Container Runner Mode
+
+The production container can also run the prompt runner directly against a cloned document-store repository.
+
+When `PROMPT_RUNNER_EXECUTION_MODE=container` is enabled for the API container:
+
+- Codex CLI is installed as part of the image build
+- startup can restore `~/.codex/auth.json` from `CODEX_AUTH_JSON_BASE64`, or log Codex in with `OPENAI_API_KEY`
+- startup can install SSH credentials from `DOCUMENT_STORE_SSH_PRIVATE_KEY_BASE64`
+- startup clones or fast-forwards `DOCUMENT_STORE_GIT_URL` + `DOCUMENT_STORE_GIT_BRANCH` into `DOCUMENT_STORE_DIR`
+- prompt runs execute Codex directly inside that cloned document-store repo, then require a commit and push to succeed
+
+This mode is meant for deployments where the writable knowledge base lives in its own Git repository instead of inside the app repo.
+
 ## Testing
 
 Schizm runs its test pipeline through `test-station`, which consolidates the server tests, demo renderer tests, and Playwright prompt-terminal coverage into one report.

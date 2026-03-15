@@ -17,7 +17,10 @@ import {
   useState,
   type ReactNode
 } from "react";
-import type { PublicRuntimeConfig } from "./runtime-config";
+import {
+  normalizeBrowserRuntimeConfig,
+  type PublicRuntimeConfig
+} from "./runtime-config";
 
 export type RealtimeConnectionStatus =
   | "idle"
@@ -32,8 +35,12 @@ const createApolloClient = (
   runtimeConfig: PublicRuntimeConfig,
   setConnectionStatus: (status: RealtimeConnectionStatus) => void
 ) => {
+  const effectiveRuntimeConfig =
+    typeof window === "undefined"
+      ? runtimeConfig
+      : normalizeBrowserRuntimeConfig(runtimeConfig, window.location);
   const httpLink = new HttpLink({
-    uri: runtimeConfig.graphqlEndpoint,
+    uri: effectiveRuntimeConfig.graphqlEndpoint,
     credentials: "same-origin"
   });
 
@@ -42,7 +49,7 @@ const createApolloClient = (
       ? null
       : new GraphQLWsLink(
           createClient({
-            url: runtimeConfig.graphqlWsEndpoint,
+            url: effectiveRuntimeConfig.graphqlWsEndpoint,
             lazy: true,
             retryAttempts: 10,
             shouldRetry: () => true,

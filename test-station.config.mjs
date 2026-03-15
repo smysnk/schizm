@@ -61,6 +61,24 @@ export default {
       }
     },
     {
+      id: "server-container-document-repo",
+      label: "Container document repo",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/server/src/services/container-document-repo.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
       id: "demo-renderer-tests",
       label: "Demo renderer tests",
       adapter: "shell",
@@ -72,12 +90,30 @@ export default {
       }
     },
     {
+      id: "container-bootstrap-tests",
+      label: "Container bootstrap",
+      adapter: "node-test",
+      package: "repo",
+      cwd: rootDir,
+      command: ["node", "--import", "tsx", "--test", "docker/container-bootstrap.test.ts"],
+      coverage: {
+        enabled: false
+      }
+    },
+    {
       id: "web-prompt-terminal-unit",
       label: "Prompt terminal unit",
       adapter: "node-test",
       package: "web",
       cwd: rootDir,
-      command: ["node", "--import", "tsx", "--test", "packages/web/src/components/canvas/prompt-terminal.test.ts"],
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/web/src/components/canvas/prompt-terminal.test.ts",
+        "packages/web/src/lib/runtime-config.test.ts"
+      ],
       coverage: {
         enabled: true,
         mode: "same-run"

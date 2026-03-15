@@ -72,6 +72,10 @@ export const env = {
   dbSsl: parseBoolean(process.env.DB_SSL, false),
   seedDemoGraph: parseBoolean(process.env.SEED_DEMO_GRAPH, true),
   promptRunnerEnabled: parseBoolean(process.env.PROMPT_RUNNER_ENABLED, true),
+  promptRunnerExecutionMode:
+    process.env.PROMPT_RUNNER_EXECUTION_MODE === "container"
+      ? "container"
+      : "worktree",
   promptRunnerPollMs: parseNumber(process.env.PROMPT_RUNNER_POLL_MS, 5_000),
   promptRunnerCodexBin: process.env.CODEX_BIN || "codex",
   promptRunnerRepoRoot: resolveRepoRoot(),
@@ -80,11 +84,25 @@ export const env = {
   promptRunnerRemoteName: process.env.PROMPT_RUNNER_REMOTE_NAME || "origin",
   promptRunnerReasoningEffort:
     process.env.PROMPT_RUNNER_REASONING_EFFORT || "medium",
+  promptRunnerContainerRepoUrl: process.env.DOCUMENT_STORE_GIT_URL || "",
+  promptRunnerContainerRepoBranch:
+    process.env.DOCUMENT_STORE_GIT_BRANCH ||
+    process.env.PROMPT_RUNNER_AUTOMATION_BRANCH ||
+    "main",
+  promptRunnerContainerGitAuthorName:
+    process.env.DOCUMENT_STORE_GIT_AUTHOR_NAME || "Schizm Bot",
+  promptRunnerContainerGitAuthorEmail:
+    process.env.DOCUMENT_STORE_GIT_AUTHOR_EMAIL || "schizm-bot@smysnk.com",
   promptRunnerWorktreeRoot:
     process.env.PROMPT_RUNNER_WORKTREE_ROOT ||
     path.join(resolveRepoRoot(), ".codex-workdirs"),
   nodeEnv: process.env.NODE_ENV || "development"
 };
+
+export const resolveDocumentStoreRoot = (repoRoot: string) =>
+  path.isAbsolute(env.documentStoreDir)
+    ? env.documentStoreDir
+    : path.join(repoRoot, env.documentStoreDir);
 
 export type RuntimeConfig = {
   appTitle: string;

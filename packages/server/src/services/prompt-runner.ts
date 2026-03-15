@@ -1,9 +1,11 @@
-import { spawn } from "node:child_process";
+import { execFile, spawn } from "node:child_process";
 import { createWriteStream, existsSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { promisify } from "node:util";
 import { env } from "../config/env";
 import {
+  ensureGitRepository,
   finalizePromptWorktree,
   preparePromptWorktree,
   type PreparedPromptWorktree
@@ -15,6 +17,7 @@ import {
   validateCanvasState,
   type CanvasValidationReport
 } from "./canvas-validator";
+import { verifyContainerDocumentRepoPush } from "./container-document-repo";
 import {
   claimNextQueuedPrompt,
   recoverActivePrompts,
@@ -24,6 +27,8 @@ import {
   type PromptStatus,
   updatePrompt
 } from "../repositories/prompt-repository";
+
+const execFileAsync = promisify(execFile);
 
 type RunnerTransition = {
   status: PromptStatus;
@@ -72,6 +77,14 @@ type RunArtifacts = {
   outputPath: string;
   auditSyncOutputPath: string;
   auditSyncStderrPath: string;
+};
+
+type ContainerDocumentRepo = {
+  repoRoot: string;
+  documentStoreRoot: string;
+  branch: string;
+  remoteName: string;
+  remoteConfigured: boolean;
 };
 
 type FailureTelemetry = JsonObject & {
@@ -158,7 +171,8 @@ const buildInstruction = ({
   schemaPath,
   automationBranch,
   promptBranch,
-  remoteName
+  remoteName,
+  documentStoreIsRepoRoot
 }: {
   prompt: Prompt;
   repoRoot: string;
@@ -169,6 +183,7 @@ const buildInstruction = ({
   automationBranch: string;
   promptBranch: string;
   remoteName: string;
+  documentStoreIsRepoRoot?: boolean;
 }) => `You are processing a queued repository-maintenance prompt for this project.
 
 Repository root: ${repoRoot}
@@ -184,6 +199,11 @@ Git remote: ${remoteName}
 Before making changes:
 - Read ${programPath} and follow it strictly.
 - Inspect the current markdown corpus and canvas files under ${documentStoreRoot}.
+- ${
+  documentStoreIsRepoRoot
+    ? `In this environment, the document store repository itself is the writable root. Treat references in program.md to obsidian-repository/ as meaning ${documentStoreRoot}.`
+    : `Treat ${documentStoreRoot} as the only writable document store root.`
+}
 - Treat every path outside ${documentStoreRoot} as read-only unless the human explicitly asked otherwise.
 - Treat ${path.join(repoRoot, "packages")} and ${path.join(repoRoot, "scripts")} as read-only unless absolutely required by the contract.
 
@@ -223,6 +243,58 @@ const resolveTsxBin = (repoRoot: string) => {
   }
 
   throw new Error(`Unable to locate tsx at ${repoBin}.`);
+};
+
+const runGit = async (repoRoot: string, args: string[]) => {
+  const { stdout } = await execFileAsync("git", args, {
+    cwd: repoRoot,
+    env: process.env,
+    encoding: "utf8"
+  });
+
+  return stdout.trim();
+};
+
+const ensureContainerDocumentRepo = async (): Promise<ContainerDocumentRepo> => {
+  const repoRoot = path.resolve(env.documentStoreDir);
+
+  if (!env.promptRunnerContainerRepoUrl.trim()) {
+    throw new Error(
+      "Container prompt runner mode requires DOCUMENT_STORE_GIT_URL to be configured."
+    );
+  }
+
+  await ensureGitRepository(repoRoot);
+
+  const remoteName = env.promptRunnerRemoteName;
+  const remoteUrl = await runGit(repoRoot, ["remote", "get-url", remoteName]).catch(() => "");
+
+  if (!remoteUrl) {
+    throw new Error(
+      `Container document store repo at ${repoRoot} is missing remote ${remoteName}.`
+    );
+  }
+
+  if (remoteUrl !== env.promptRunnerContainerRepoUrl) {
+    throw new Error(
+      `Container document store remote mismatch. Expected ${env.promptRunnerContainerRepoUrl}, received ${remoteUrl}.`
+    );
+  }
+
+  const branch = env.promptRunnerContainerRepoBranch;
+
+  await runGit(repoRoot, ["fetch", remoteName, branch]);
+  await runGit(repoRoot, ["checkout", "-B", branch, `${remoteName}/${branch}`]);
+  await runGit(repoRoot, ["config", "user.name", env.promptRunnerContainerGitAuthorName]);
+  await runGit(repoRoot, ["config", "user.email", env.promptRunnerContainerGitAuthorEmail]);
+
+  return {
+    repoRoot,
+    documentStoreRoot: repoRoot,
+    branch,
+    remoteName,
+    remoteConfigured: true
+  };
 };
 
 const executeCodex = async ({
@@ -289,15 +361,27 @@ const executeCodex = async ({
 const executeAuditSync = async ({
   promptId,
   artifacts,
-  repoRoot
+  repoRoot,
+  auditPath,
+  scriptRepoRoot
 }: {
   promptId: string;
   artifacts: RunArtifacts;
   repoRoot: string;
+  auditPath: string;
+  scriptRepoRoot: string;
 }) => {
-  const tsxBin = resolveTsxBin(env.promptRunnerRepoRoot);
-  const scriptPath = path.join(repoRoot, "scripts", "sync-prompt-audit.ts");
-  const args = [scriptPath, "--prompt-id", promptId];
+  const tsxBin = resolveTsxBin(scriptRepoRoot);
+  const scriptPath = path.join(scriptRepoRoot, "scripts", "sync-prompt-audit.ts");
+  const args = [
+    scriptPath,
+    "--prompt-id",
+    promptId,
+    "--repo-root",
+    repoRoot,
+    "--audit-path",
+    auditPath
+  ];
 
   return new Promise<JsonObject>((resolve, reject) => {
     const stdoutChunks: Buffer[] = [];
@@ -483,6 +567,7 @@ export class PromptRunner {
     let preflightCanvasReport: CanvasValidationReport | null = null;
     let postflightCanvasReport: CanvasValidationReport | null = null;
     let preparedWorktree: PreparedPromptWorktree | null = null;
+    let containerDocumentRepo: ContainerDocumentRepo | null = null;
     let finalizedWorktree: JsonObject | null = null;
 
     const runnerMetadata: JsonObject = {
@@ -565,39 +650,86 @@ export class PromptRunner {
 
     try {
       await transitionTo("scanning", "Claimed prompt for processing.");
+      let repoRoot = "";
+      let documentStoreRoot = "";
+      let programPath = "";
+      let auditPath = "";
+      let schemaPath = "";
+      let remoteName = env.promptRunnerRemoteName;
+      let remoteConfigured = false;
+      let promptBranch = env.promptRunnerAutomationBranch;
+      let automationBranch = env.promptRunnerAutomationBranch;
+      let documentStoreIsRepoRoot = false;
 
-      preparedWorktree = await preparePromptWorktree({
-        repoRoot: controllerRepoRoot,
-        worktreeRoot: env.promptRunnerWorktreeRoot,
-        automationBranch: env.promptRunnerAutomationBranch,
-        promptId: prompt.id,
-        remoteName: env.promptRunnerRemoteName,
-        documentStoreDir: env.documentStoreDir
-      });
+      if (env.promptRunnerExecutionMode === "container") {
+        containerDocumentRepo = await ensureContainerDocumentRepo();
+        repoRoot = containerDocumentRepo.repoRoot;
+        documentStoreRoot = containerDocumentRepo.documentStoreRoot;
+        programPath = path.join(controllerRepoRoot, "program.md");
+        auditPath = path.join(documentStoreRoot, "audit.md");
+        schemaPath = path.join(
+          controllerRepoRoot,
+          "schemas",
+          "codex-run-output.schema.json"
+        );
+        remoteName = containerDocumentRepo.remoteName;
+        remoteConfigured = containerDocumentRepo.remoteConfigured;
+        promptBranch = containerDocumentRepo.branch;
+        automationBranch = containerDocumentRepo.branch;
+        documentStoreIsRepoRoot = true;
 
-      const repoRoot = preparedWorktree.worktreePath;
-      const documentStoreRoot = path.join(repoRoot, env.documentStoreDir);
-      const programPath = path.join(repoRoot, "program.md");
-      const auditPath = path.join(documentStoreRoot, "audit.md");
-      const schemaPath = path.join(repoRoot, "schemas", "codex-run-output.schema.json");
+        Object.assign(runnerMetadata, {
+          executionMode: "container",
+          repoRoot,
+          documentStoreRoot,
+          programPath,
+          auditPath,
+          schemaPath,
+          auditSyncScriptPath: path.join(controllerRepoRoot, "scripts", "sync-prompt-audit.ts"),
+          remoteConfigured,
+          remoteName,
+          documentStoreGitUrl: env.promptRunnerContainerRepoUrl,
+          documentStoreGitBranch: containerDocumentRepo.branch
+        });
+      } else {
+        preparedWorktree = await preparePromptWorktree({
+          repoRoot: controllerRepoRoot,
+          worktreeRoot: env.promptRunnerWorktreeRoot,
+          automationBranch: env.promptRunnerAutomationBranch,
+          promptId: prompt.id,
+          remoteName: env.promptRunnerRemoteName,
+          documentStoreDir: env.documentStoreDir
+        });
 
-      Object.assign(runnerMetadata, {
-        repoRoot,
-        documentStoreRoot,
-        programPath,
-        auditPath,
-        schemaPath,
-        auditSyncScriptPath: path.join(repoRoot, "scripts", "sync-prompt-audit.ts"),
-        worktreePath: preparedWorktree.worktreePath,
-        promptBranch: preparedWorktree.promptBranch,
-        remoteConfigured: preparedWorktree.remoteConfigured,
-        baseRef: preparedWorktree.baseRef,
-        documentStoreDir: preparedWorktree.documentStoreDir,
-        documentStoreSeedMode: preparedWorktree.documentStoreSeedMode,
-        documentStoreSeedPaths: preparedWorktree.documentStoreSeedPaths,
-        controllerSyncedPaths: preparedWorktree.controllerSyncedPaths,
-        controllerRemovedPaths: preparedWorktree.controllerRemovedPaths
-      });
+        repoRoot = preparedWorktree.worktreePath;
+        documentStoreRoot = path.join(repoRoot, env.documentStoreDir);
+        programPath = path.join(repoRoot, "program.md");
+        auditPath = path.join(documentStoreRoot, "audit.md");
+        schemaPath = path.join(repoRoot, "schemas", "codex-run-output.schema.json");
+        remoteName = preparedWorktree.remoteName;
+        remoteConfigured = preparedWorktree.remoteConfigured;
+        promptBranch = preparedWorktree.promptBranch;
+        automationBranch = preparedWorktree.automationBranch;
+
+        Object.assign(runnerMetadata, {
+          executionMode: "worktree",
+          repoRoot,
+          documentStoreRoot,
+          programPath,
+          auditPath,
+          schemaPath,
+          auditSyncScriptPath: path.join(repoRoot, "scripts", "sync-prompt-audit.ts"),
+          worktreePath: preparedWorktree.worktreePath,
+          promptBranch: preparedWorktree.promptBranch,
+          remoteConfigured: preparedWorktree.remoteConfigured,
+          baseRef: preparedWorktree.baseRef,
+          documentStoreDir: preparedWorktree.documentStoreDir,
+          documentStoreSeedMode: preparedWorktree.documentStoreSeedMode,
+          documentStoreSeedPaths: preparedWorktree.documentStoreSeedPaths,
+          controllerSyncedPaths: preparedWorktree.controllerSyncedPaths,
+          controllerRemovedPaths: preparedWorktree.controllerRemovedPaths
+        });
+      }
 
       preflightCanvasReport = await validateCanvasState({
         repoRoot,
@@ -631,9 +763,10 @@ export class PromptRunner {
         programPath,
         auditPath,
         schemaPath,
-        automationBranch: preparedWorktree.automationBranch,
-        promptBranch: preparedWorktree.promptBranch,
-        remoteName: preparedWorktree.remoteName
+        automationBranch,
+        promptBranch,
+        remoteName,
+        documentStoreIsRepoRoot
       });
 
       await transitionTo("deciding", "Prepared Codex instruction payload.", {
@@ -674,6 +807,35 @@ export class PromptRunner {
       const terminalStatus =
         finalOutput.resultStatus === "failed" ? "failed" : "completed";
 
+      if (
+        env.promptRunnerExecutionMode === "container" &&
+        terminalStatus === "completed" &&
+        (!finalOutput.git.commitCreated ||
+          !finalOutput.git.pushSucceeded ||
+          !finalOutput.git.commitSha)
+      ) {
+        throw new Error(
+          "Container prompt runner mode requires Codex to create a commit and push it to the remote branch."
+        );
+      }
+
+      let containerVerification: JsonObject | null = null;
+
+      if (
+        env.promptRunnerExecutionMode === "container" &&
+        terminalStatus === "completed" &&
+        containerDocumentRepo
+      ) {
+        containerVerification = toJsonValue(
+          await verifyContainerDocumentRepoPush({
+            repoRoot,
+            remoteName: containerDocumentRepo.remoteName,
+            branch: containerDocumentRepo.branch,
+            expectedCommitSha: finalOutput.git.commitSha
+          })
+        ) as JsonObject;
+      }
+
       await transitionTo("updating_canvas", "Validating canvas files after Codex output.");
       postflightCanvasReport = await validateCanvasState({
         repoRoot,
@@ -704,7 +866,9 @@ export class PromptRunner {
         auditSyncResult = await executeAuditSync({
           promptId: prompt.id,
           artifacts,
-          repoRoot
+          repoRoot,
+          auditPath,
+          scriptRepoRoot: controllerRepoRoot
         });
       } else if (terminalStatus === "completed") {
         throw new Error("Codex reported a completed run without appending an audit section.");
@@ -762,6 +926,15 @@ export class PromptRunner {
                 remoteConfigured: preparedWorktree.remoteConfigured,
                 finalized: finalizedWorktree
               }
+            : null,
+          containerRepo: containerDocumentRepo
+            ? {
+                path: containerDocumentRepo.repoRoot,
+                branch: containerDocumentRepo.branch,
+                remoteName: containerDocumentRepo.remoteName,
+                remoteConfigured: containerDocumentRepo.remoteConfigured,
+                verification: containerVerification
+              }
             : null
         },
         errorMessage:
@@ -795,6 +968,14 @@ export class PromptRunner {
                 automationBranch: preparedWorktree.automationBranch,
                 remoteConfigured: preparedWorktree.remoteConfigured,
                 preserved: true
+              }
+            : null,
+          containerRepo: containerDocumentRepo
+            ? {
+                path: containerDocumentRepo.repoRoot,
+                branch: containerDocumentRepo.branch,
+                remoteName: containerDocumentRepo.remoteName,
+                remoteConfigured: containerDocumentRepo.remoteConfigured
               }
             : null
         },

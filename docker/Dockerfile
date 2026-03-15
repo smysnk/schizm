@@ -12,6 +12,7 @@ RUN corepack enable \
   && yarn install --immutable
 
 COPY packages ./packages
+COPY schemas ./schemas
 COPY scripts ./scripts
 COPY program.md ./program.md
 
@@ -21,23 +22,34 @@ RUN yarn workspace server build \
 FROM node:22-bookworm-slim AS runtime
 WORKDIR /app
 
+ARG CODEX_CLI_VERSION=0.114.0
+
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV SERVER_PORT=4000
 ENV WEB_PORT=3000
 ENV GRAPHQL_ENDPOINT=/graphql
+ENV CODEX_HOME=/root/.codex
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git openssh-client ca-certificates \
+  && rm -rf /var/lib/apt/lists/* \
+  && npm install -g "@openai/codex@${CODEX_CLI_VERSION}"
 
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /app/.yarnrc.yml ./.yarnrc.yml
 COPY --from=build /app/tsconfig.base.json ./tsconfig.base.json
 COPY --from=build /app/packages ./packages
+COPY --from=build /app/schemas ./schemas
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/program.md ./program.md
 COPY docker/docker-entrypoint.sh ./docker/docker-entrypoint.sh
+COPY docker/container-bootstrap.sh ./docker/container-bootstrap.sh
 
 RUN chmod +x ./docker/docker-entrypoint.sh \
-  && mkdir -p /app/obsidian-repository
+  && chmod +x ./docker/container-bootstrap.sh \
+  && mkdir -p /app/obsidian-repository "$CODEX_HOME"
 
 EXPOSE 3000 4000
 

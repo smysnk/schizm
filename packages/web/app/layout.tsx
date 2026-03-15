@@ -21,6 +21,8 @@ export const metadata: Metadata = {
   description: "Prompt-driven workspace for maintaining a living Obsidian document store."
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children
 }: Readonly<{

@@ -67,6 +67,9 @@ web:
     className: "traefik"
     annotations:
       cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    httpsRedirect:
+      enabled: true
+      permanent: true
     host: "schizm.smysnk.com"
     path: /
     pathType: Prefix
