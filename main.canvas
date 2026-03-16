@@ -37,11 +37,20 @@
       "height": 280
     },
     {
+      "id": "frequency-illusion",
+      "type": "file",
+      "file": "concepts/frequency-illusion.md",
+      "x": 760,
+      "y": 520,
+      "width": 360,
+      "height": 240
+    },
+    {
       "id": "dream-journal",
       "type": "file",
       "file": "journals/dream-journal.md",
       "x": 760,
-      "y": 520,
+      "y": 820,
       "width": 360,
       "height": 260
     },
@@ -50,7 +59,7 @@
       "type": "file",
       "file": "fragments/roses-are-red-violets-are-blue.md",
       "x": 760,
-      "y": 860,
+      "y": 1160,
       "width": 360,
       "height": 220
     },
@@ -59,7 +68,7 @@
       "type": "file",
       "file": "fragments/repeated-clock-time.md",
       "x": 760,
-      "y": 1160,
+      "y": 1460,
       "width": 360,
       "height": 220
     }
@@ -79,6 +88,11 @@
       "id": "edge-index-clarifier",
       "fromNode": "index",
       "toNode": "clarifier"
+    },
+    {
+      "id": "edge-index-frequency-illusion",
+      "fromNode": "index",
+      "toNode": "frequency-illusion"
     },
     {
       "id": "edge-index-dream-journal",

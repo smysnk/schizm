@@ -4,6 +4,7 @@
 
 - [[concepts/thought-capture-inbox]]
 - [[concepts/conversational-thought-clarifier]]
+- [[concepts/frequency-illusion]]
 - [[journals/dream-journal]]
 
 ## Fragments
@@ -22,3 +23,5 @@ The repository also now includes a dedicated dream journal for capturing short s
 It also includes a short poetic fragment captured as written.
 
 It now also includes a short fragment about repeatedly noticing the same clock time.
+
+It also includes a note capturing the frequency illusion as a concept that stood out enough to save.
