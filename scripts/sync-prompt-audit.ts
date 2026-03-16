@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promises as fs } from "node:fs";
 import { promisify } from "node:util";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   env,
   resolveDocumentStoreRoot
@@ -35,6 +36,12 @@ type PromptAuditPayload = JsonObject & {
   deleted: string[];
   moved: Array<{ from: string; to: string }>;
   canvas: string[];
+  contextualRelevance: Array<{
+    path: string;
+    relationship: string;
+    disposition: string;
+  }>;
+  hypotheses: JsonObject;
   rationales: JsonObject;
   rawSection: string;
 };
@@ -98,7 +105,7 @@ const parseArgs = (argv: string[]) => {
   };
 };
 
-const extractAuditSection = (auditSource: string, promptId: string) => {
+export const extractAuditSection = (auditSource: string, promptId: string) => {
   const sectionStartMarker = `<!-- PROMPT-AUDIT-START:${promptId} -->`;
   const sectionEndMarker = `<!-- PROMPT-AUDIT-END:${promptId} -->`;
   const startIndex = auditSource.lastIndexOf(sectionStartMarker);
@@ -120,7 +127,7 @@ const extractAuditSection = (auditSource: string, promptId: string) => {
   };
 };
 
-const extractJsonBlock = (rawSection: string) => {
+export const extractJsonBlock = (rawSection: string) => {
   const match = rawSection.match(/```json\s*([\s\S]*?)\s*```/i);
 
   if (!match) {
@@ -169,6 +176,32 @@ const toMovedArray = (value: unknown): Array<{ from: string; to: string }> => {
     }
 
     return [{ from, to }];
+  });
+};
+
+const toContextualRelevanceArray = (
+  value: unknown
+): Array<{ path: string; relationship: string; disposition: string }> => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((item) => {
+    if (!isJsonObject(item)) {
+      return [];
+    }
+
+    const path = typeof item.path === "string" ? item.path.trim() : "";
+    const relationship =
+      typeof item.relationship === "string" ? item.relationship.trim() : "";
+    const disposition =
+      typeof item.disposition === "string" ? item.disposition.trim() : "";
+
+    if (!path || !relationship || !disposition) {
+      return [];
+    }
+
+    return [{ path, relationship, disposition }];
   });
 };
 
@@ -247,7 +280,7 @@ const readGitInfo = async (repoRoot: string): Promise<GitInfo> => {
   };
 };
 
-const buildAuditPayload = ({
+export const buildAuditPayload = ({
   promptId,
   rawSection,
   parsedJson,
@@ -294,6 +327,8 @@ const buildAuditPayload = ({
     deleted: toStringArray(parsedJson.deleted),
     moved: toMovedArray(parsedJson.moved),
     canvas: toStringArray(parsedJson.canvas),
+    contextualRelevance: toContextualRelevanceArray(parsedJson.contextualRelevance),
+    hypotheses: toJsonObject(parsedJson.hypotheses),
     rationales: toJsonObject(parsedJson.rationales),
     rawSection
   };
@@ -357,12 +392,18 @@ const main = async () => {
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 };
 
-void main()
-  .catch((error) => {
-    const message = error instanceof Error ? error.message : "Prompt audit sync failed.";
-    process.stderr.write(`${message}\n`);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await pool.end();
-  });
+const isDirectExecution =
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url));
+
+if (isDirectExecution) {
+  void main()
+    .catch((error) => {
+      const message = error instanceof Error ? error.message : "Prompt audit sync failed.";
+      process.stderr.write(`${message}\n`);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await pool.end();
+    });
+}

@@ -10,6 +10,8 @@ Each run starts from a user-submitted prompt stored in the `prompts` table. Your
 
 The goal is to capture ideas faithfully, place them where they belong, connect them to related material, and keep the repository readable as the concept graph grows over time.
 
+When a prompt appears contextually relevant to earlier notes but the relationship is still uncertain, preserve that uncertainty. Prefer a tracked hypothesis over a confident merge or an overstated conclusion.
+
 ## Scope
 
 Read these files for context:
@@ -60,8 +62,8 @@ Your responsibilities during a run are:
 
 1. Read the submitted prompt carefully.
 2. Scan the existing markdown corpus and canvas files inside `obsidian-repository/` for relevant related content, while ignoring anything matched by `.gitignore`.
-3. Decide how the new idea should be integrated.
-4. Update markdown files and canvas files inside `obsidian-repository/` accordingly.
+3. Decide how the new idea should be integrated, and whether it has any plausible but still-unproven relation to earlier notes.
+4. Update markdown files, hypothesis notes, and canvas files inside `obsidian-repository/` accordingly.
 5. Append one strict audit section to `obsidian-repository/audit.md`.
 6. Commit the resulting changes.
 7. Push the commit to the configured remote branch.
@@ -75,12 +77,14 @@ When editing content, do not expand on the user's ideas, speculate beyond what w
 - tighten phrasing while preserving the original meaning
 - reorganize or split content so the existing idea is easier to find
 - remove duplicated wording when it does not change the substance
+- record a clearly labeled, explicitly tentative hypothesis when a relationship seems plausible but is not yet proven by the available notes
 
 You should not:
 
 - add supporting arguments that were not already present
 - invent examples, interpretations, or conclusions
 - broaden a note into a more developed theory than the prompt or existing notes justify
+- present a possible relationship as if it were already established fact
 - "helpfully" elaborate on sparse thoughts beyond light editorial cleanup
 
 ## Decision Modes
@@ -98,6 +102,63 @@ For every prompt, make an explicit decision about which of these modes best appl
 
 Your final response must name one primary decision mode, even if the run includes secondary cleanup or restructuring work.
 
+## Contextual Relevance Pass
+
+After choosing a primary decision mode, perform a second pass that asks:
+
+- does this prompt resemble an earlier fragment, observation, or concept in a way that may matter later
+- does it introduce a possible explanation, category, or mechanism for an earlier note
+- does it weaken, complicate, or partially contradict an earlier interpretation
+
+When the answer may be yes, do not force the notes into the same document unless the relationship is already well-supported by the repository contents. Prefer a tracked hypothesis over an assertive merge.
+
+This means a later named concept can be treated as contextually relevant to an earlier fragment even when the relationship is still uncertain. The uncertainty should be preserved instead of collapsed away.
+
+## Hypothesis Tracking
+
+Use `obsidian-repository/hypotheses/` for provisional side theories that need to be tracked over time.
+
+Create or update a hypothesis note when:
+
+- a prompt seems related to one or more earlier notes, but the exact relationship is still uncertain
+- a concept may explain an earlier fragment, but the repository does not yet justify claiming that explanation as fact
+- later prompts could reasonably strengthen, weaken, or disprove the suspected link
+
+Each hypothesis note should stay narrow and evidence-oriented. Prefer a structure like:
+
+```md
+# <hypothesis title>
+
+## Status
+Open | Strengthening | Weakening | Disproved | Resolved
+
+## Claim
+One sentence describing the possible relationship, written with uncertainty.
+
+## Linked Notes
+- [[path/to/note]]
+
+## Evidence For
+- observation grounded in an existing prompt or note
+
+## Evidence Against
+- observation that weakens the claim, if any
+
+## Open Questions
+- what would help confirm or disconfirm the hypothesis
+
+## Update Log
+- dated note about what changed this hypothesis
+```
+
+Hypothesis rules:
+
+- write claims with uncertainty words such as `may`, `might`, `possibly`, or `could`
+- ground every hypothesis in repository evidence already present in prompts or notes
+- avoid naming a hypothesis as truth unless later evidence in the repo justifies promotion
+- update hypothesis status over time as new prompts strengthen or weaken it
+- mark disproved hypotheses as disproved instead of silently deleting their history unless the human explicitly asks for cleanup
+
 ## Markdown Operations
 
 You are allowed to:
@@ -110,6 +171,7 @@ You are allowed to:
 - merge overlapping markdown files
 - split a markdown file into multiple files if that improves clarity
 - remove obsolete content when it is contradicted by stronger or newer ideas
+- create or update hypothesis notes inside `obsidian-repository/hypotheses/`
 
 You should prefer changes that improve:
 
@@ -140,6 +202,13 @@ When a file is renamed or moved, preserve continuity in the canvas where practic
 
 If a prompt causes a major conceptual reorganization, the canvas should be reorganized to match the new topology rather than merely patched.
 
+When a hypothesis is created or updated:
+
+- represent it in the canvas as a hypothesis node or other visibly tentative structure
+- connect it to the relevant source notes
+- keep the relationship visually distinct from confirmed conceptual relationships when possible
+- update or remove the hypothesis representation when later evidence resolves or disproves it
+
 ## Audit Contract
 
 Append exactly one section to `obsidian-repository/audit.md` for each completed run.
@@ -160,6 +229,7 @@ Inside those boundaries, include:
 - files deleted
 - files moved or renamed
 - canvas updates
+- hypotheses created, updated, strengthened, weakened, disproved, or resolved
 - git branch
 - git commit SHA
 - rationale for every changed artifact
@@ -195,6 +265,12 @@ Use this exact shape as the audit skeleton:
 ### Canvas Updates
 - `obsidian-repository/main.canvas`: rationale
 
+### Contextual Relevance
+- `path/to/related-note.md`: why this prompt may relate, differ, or provide possible explanatory context
+
+### Hypotheses
+- `obsidian-repository/hypotheses/example.md`: rationale
+
 ### Git
 - Branch: <branch-name>
 - Commit: <commit-sha>
@@ -212,6 +288,21 @@ Use this exact shape as the audit skeleton:
   "deleted": [],
   "moved": [],
   "canvas": [],
+  "contextualRelevance": [
+    {
+      "path": "path/to/related-note.md",
+      "relationship": "possible explanatory context for an earlier observation",
+      "disposition": "related_but_unproven"
+    }
+  ],
+  "hypotheses": {
+    "created": [],
+    "updated": [],
+    "strengthened": [],
+    "weakened": [],
+    "disproved": [],
+    "resolved": []
+  },
   "rationales": {}
 }
 ```
@@ -264,6 +355,7 @@ A strong run should leave the repository in a state where:
 - the new idea is easy to find
 - duplicate or contradictory knowledge is reduced rather than amplified
 - the main canvas in `obsidian-repository/` reflects the current conceptual relationships
+- plausible but uncertain relationships are tracked as hypotheses instead of being overstated
 - the audit log makes the rationale legible to a future reader
 - the written content is cleaner without becoming more expansive than the source material
 

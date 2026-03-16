@@ -52,6 +52,23 @@ type CodexRunOutput = {
     moved: Array<{ from: string; to: string }>;
     canvasUpdated: boolean;
   };
+  contextualRelevance: Array<{
+    path: string;
+    relationship: string;
+    disposition:
+      | "related_but_unproven"
+      | "supports_existing_topic"
+      | "complicates_existing_topic"
+      | "contradicts_existing_topic";
+  }>;
+  hypotheses: {
+    created: string[];
+    updated: string[];
+    strengthened: string[];
+    weakened: string[];
+    disproved: string[];
+    resolved: string[];
+  };
   audit: {
     path: string;
     appended: boolean;

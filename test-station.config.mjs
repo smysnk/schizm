@@ -101,6 +101,17 @@ export default {
       }
     },
     {
+      id: "audit-sync-tests",
+      label: "Audit sync",
+      adapter: "node-test",
+      package: "repo",
+      cwd: rootDir,
+      command: ["node", "--import", "tsx", "--test", "scripts/sync-prompt-audit.test.ts"],
+      coverage: {
+        enabled: false
+      }
+    },
+    {
       id: "web-prompt-terminal-unit",
       label: "Prompt terminal unit",
       adapter: "node-test",
