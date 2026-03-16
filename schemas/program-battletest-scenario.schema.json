@@ -1,0 +1,400 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schizm.local/schemas/program-battletest-scenario.schema.json",
+  "title": "ProgramBattleTestScenario",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "title",
+    "theme",
+    "description",
+    "tags",
+    "seed",
+    "rounds",
+    "checkpoints",
+    "finalAssertions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "theme": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "tags": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "seed": {
+      "$ref": "#/$defs/seed"
+    },
+    "rounds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/round"
+      }
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/checkpoint"
+      }
+    },
+    "finalAssertions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/assertion"
+      }
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "not": {
+        "pattern": "^/"
+      }
+    },
+    "seed": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "path"
+      ],
+      "properties": {
+        "mode": {
+          "const": "copySeedDir"
+        },
+        "path": {
+          "$ref": "#/$defs/relativePath"
+        }
+      }
+    },
+    "hypothesisDelta": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "createdAtLeast": { "type": "integer", "minimum": 0 },
+        "createdAtMost": { "type": "integer", "minimum": 0 },
+        "updatedAtLeast": { "type": "integer", "minimum": 0 },
+        "updatedAtMost": { "type": "integer", "minimum": 0 },
+        "strengthenedAtLeast": { "type": "integer", "minimum": 0 },
+        "strengthenedAtMost": { "type": "integer", "minimum": 0 },
+        "weakenedAtLeast": { "type": "integer", "minimum": 0 },
+        "weakenedAtMost": { "type": "integer", "minimum": 0 },
+        "disprovedAtLeast": { "type": "integer", "minimum": 0 },
+        "disprovedAtMost": { "type": "integer", "minimum": 0 },
+        "resolvedAtLeast": { "type": "integer", "minimum": 0 },
+        "resolvedAtMost": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "roundExpectations": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "decisionModes": {
+          "type": "array",
+          "items": {
+            "enum": ["create", "integrate", "append"]
+          }
+        },
+        "minimumContextualRelevance": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maximumContextualRelevance": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "hypothesisDelta": {
+          "$ref": "#/$defs/hypothesisDelta"
+        },
+        "assertions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        }
+      }
+    },
+    "round": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "prompt"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expectations": {
+          "$ref": "#/$defs/roundExpectations"
+        }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "afterRound",
+        "assertions"
+      ],
+      "properties": {
+        "afterRound": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "assertions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/assertion"
+          }
+        }
+      }
+    },
+    "baseAssertion": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "assertion": {
+      "oneOf": [
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "path"],
+              "properties": {
+                "type": { "enum": ["pathExists", "pathMissing"] },
+                "path": { "$ref": "#/$defs/relativePath" },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "path", "value"],
+              "properties": {
+                "type": { "enum": ["fileContains", "fileNotContains"] },
+                "path": { "$ref": "#/$defs/relativePath" },
+                "value": { "type": "string", "minLength": 1 },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "path", "jsonPath", "value"],
+              "properties": {
+                "type": { "enum": ["jsonPathEquals", "jsonPathIncludes"] },
+                "path": { "$ref": "#/$defs/relativePath" },
+                "jsonPath": { "type": "string", "minLength": 1 },
+                "value": true,
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "path", "count"],
+              "properties": {
+                "type": { "enum": ["minimumFileCountInDir", "maximumFileCountInDir"] },
+                "path": { "$ref": "#/$defs/relativePath" },
+                "count": { "type": "integer", "minimum": 0 },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "notePath"],
+              "properties": {
+                "type": { "const": "canvasHasNodeForPath" },
+                "notePath": { "$ref": "#/$defs/relativePath" },
+                "canvasPath": { "$ref": "#/$defs/relativePath" },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "from", "to"],
+              "properties": {
+                "type": { "const": "canvasHasTentativeEdge" },
+                "from": { "$ref": "#/$defs/relativePath" },
+                "to": { "$ref": "#/$defs/relativePath" },
+                "canvasPath": { "$ref": "#/$defs/relativePath" },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "disposition"],
+              "properties": {
+                "type": { "const": "auditIncludesDisposition" },
+                "disposition": {
+                  "enum": [
+                    "related_but_unproven",
+                    "supports_existing_topic",
+                    "complicates_existing_topic",
+                    "contradicts_existing_topic"
+                  ]
+                },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "path", "status"],
+              "properties": {
+                "type": { "const": "hypothesisStatusEquals" },
+                "path": { "$ref": "#/$defs/relativePath" },
+                "status": {
+                  "enum": ["Open", "Strengthening", "Weakening", "Disproved", "Resolved"]
+                },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "path", "statuses"],
+              "properties": {
+                "type": { "const": "hypothesisStatusIn" },
+                "path": { "$ref": "#/$defs/relativePath" },
+                "statuses": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "enum": ["Open", "Strengthening", "Weakening", "Disproved", "Resolved"]
+                  }
+                },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type", "mode"],
+              "properties": {
+                "type": { "const": "decisionModeObserved" },
+                "mode": { "enum": ["create", "integrate", "append"] },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/baseAssertion" },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["type"],
+              "properties": {
+                "type": { "const": "noUnexpectedHypothesisCreation" },
+                "allowedPaths": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/relativePath"
+                  }
+                },
+                "reason": { "type": "string", "minLength": 1 }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

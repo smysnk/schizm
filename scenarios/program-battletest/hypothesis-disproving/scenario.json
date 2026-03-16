@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "1",
+  "id": "hypothesis-disproving",
+  "title": "Hypothesis Disproving",
+  "theme": "A plausible theory that gets weakened or disproved",
+  "description": "Starts with an open seed hypothesis, then adds prompts that point toward a more mundane explanation.",
+  "tags": ["hypotheses", "disproving", "counterevidence"],
+  "seed": {
+    "mode": "copySeedDir",
+    "path": "../_shared/seed-open-hypothesis"
+  },
+  "rounds": [
+    {
+      "id": "round-1",
+      "prompt": "The microwave clock is bright and directly in my line of sight from the couch, so I end up seeing it constantly.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "minimumContextualRelevance": 1,
+        "hypothesisDelta": {
+          "weakenedAtLeast": 0,
+          "updatedAtLeast": 0
+        }
+      }
+    },
+    {
+      "id": "round-2",
+      "prompt": "I also have an alarm for 11:10, so I tend to glance over again a minute later and catch 11:11.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "minimumContextualRelevance": 1,
+        "hypothesisDelta": {
+          "weakenedAtLeast": 0,
+          "disprovedAtLeast": 0
+        }
+      }
+    },
+    {
+      "id": "round-3",
+      "prompt": "This is feeling less like a special pattern and more like a habit plus timing.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "minimumContextualRelevance": 1,
+        "hypothesisDelta": {
+          "weakenedAtLeast": 0,
+          "disprovedAtLeast": 0,
+          "resolvedAtLeast": 0
+        }
+      }
+    }
+  ],
+  "checkpoints": [
+    {
+      "afterRound": 2,
+      "label": "The prior theory should visibly move off Open",
+      "assertions": [
+        {
+          "type": "hypothesisStatusIn",
+          "path": "obsidian-repository/hypotheses/repeated-clock-time-may-relate-to-frequency-illusion.md",
+          "statuses": ["Weakening", "Disproved"],
+          "reason": "Counterevidence should weaken the seeded hypothesis instead of leaving it untouched."
+        }
+      ]
+    }
+  ],
+  "finalAssertions": [
+    {
+      "type": "pathExists",
+      "path": "obsidian-repository/hypotheses/repeated-clock-time-may-relate-to-frequency-illusion.md",
+      "reason": "Disproving a theory should update its history, not erase it."
+    },
+    {
+      "type": "hypothesisStatusIn",
+      "path": "obsidian-repository/hypotheses/repeated-clock-time-may-relate-to-frequency-illusion.md",
+      "statuses": ["Weakening", "Disproved"],
+      "reason": "The final state should reflect that the original hypothesis lost support."
+    }
+  ]
+}

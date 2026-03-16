@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "1",
+  "id": "grocery-lists",
+  "title": "Grocery Lists",
+  "theme": "Utility-first note handling",
+  "description": "Tests that basic grocery capture remains practical and is not over-conceptualized.",
+  "tags": ["utility", "lists", "grocery"],
+  "seed": {
+    "mode": "copySeedDir",
+    "path": "../_shared/seed-empty"
+  },
+  "rounds": [
+    {
+      "id": "round-1",
+      "prompt": "Groceries: eggs, limes, Greek yogurt, cilantro, rice.",
+      "expectations": {
+        "decisionModes": ["create", "append"]
+      }
+    },
+    {
+      "id": "round-2",
+      "prompt": "Add dish soap and paper towels to groceries.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    },
+    {
+      "id": "round-3",
+      "prompt": "Split the grocery note into produce, pantry, dairy, and household if that makes it easier to scan.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    }
+  ],
+  "checkpoints": [
+    {
+      "afterRound": 2,
+      "label": "No utility note should turn into a theory",
+      "assertions": [
+        {
+          "type": "maximumFileCountInDir",
+          "path": "obsidian-repository/hypotheses",
+          "count": 0,
+          "reason": "A grocery list should not trigger a conceptual hypothesis."
+        }
+      ]
+    }
+  ],
+  "finalAssertions": [
+    {
+      "type": "maximumFileCountInDir",
+      "path": "obsidian-repository/hypotheses",
+      "count": 0,
+      "reason": "Utility lists should stay practical."
+    },
+    {
+      "type": "noUnexpectedHypothesisCreation",
+      "reason": "The system should not invent hidden meaning inside a grocery list."
+    }
+  ]
+}

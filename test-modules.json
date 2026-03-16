@@ -19,6 +19,36 @@
       "theme": "git"
     },
     {
+      "package": "server",
+      "include": ["packages/server/src/services/program-battletest/scenario-pack.test.ts"],
+      "module": "automation",
+      "theme": "battletest"
+    },
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/program-battletest/harness.test.ts"],
+      "module": "automation",
+      "theme": "battletest"
+    },
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/program-battletest/evaluator.test.ts"],
+      "module": "automation",
+      "theme": "battletest"
+    },
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/program-battletest/suite.test.ts"],
+      "module": "automation",
+      "theme": "battletest"
+    },
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/program-battletest/reporting.test.ts"],
+      "module": "automation",
+      "theme": "battletest"
+    },
+    {
       "package": "web",
       "include": ["packages/web/src/components/canvas/prompt-terminal.test.ts"],
       "module": "web",
@@ -45,6 +75,33 @@
       "theme": "git"
     },
     {
+      "package": "server",
+      "include": ["packages/server/src/services/program-battletest/scenario-pack.ts"],
+      "module": "automation",
+      "theme": "battletest"
+    },
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/program-battletest/harness.ts"],
+      "module": "automation",
+      "theme": "battletest"
+    },
+    {
+      "package": "server",
+      "include": [
+        "packages/server/src/services/program-battletest/canvas-inspector.ts",
+        "packages/server/src/services/program-battletest/document-store-paths.ts",
+        "packages/server/src/services/program-battletest/evaluator.ts",
+        "packages/server/src/services/program-battletest/hypothesis-inspector.ts",
+        "packages/server/src/services/program-battletest/report-fixture.ts",
+        "packages/server/src/services/program-battletest/reporting.ts",
+        "packages/server/src/services/program-battletest/runner.ts",
+        "packages/server/src/services/program-battletest/suite.ts"
+      ],
+      "module": "automation",
+      "theme": "battletest"
+    },
+    {
       "package": "web",
       "include": ["packages/web/src/components/canvas/prompt-terminal.ts"],
       "module": "web",
@@ -59,6 +116,7 @@
     ],
     "themes": [
       { "module": "automation", "theme": "canvas", "owner": "smysnk" },
+      { "module": "automation", "theme": "battletest", "owner": "smysnk" },
       { "module": "automation", "theme": "git", "owner": "smysnk" },
       { "module": "demo", "theme": "renderers", "owner": "smysnk" },
       { "module": "web", "theme": "prompt", "owner": "smysnk" },

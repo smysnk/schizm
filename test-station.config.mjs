@@ -79,6 +79,107 @@ export default {
       }
     },
     {
+      id: "server-program-battletest-scenarios",
+      label: "Program battletest scenarios",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/server/src/services/program-battletest/scenario-pack.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "server-program-battletest-harness",
+      label: "Program battletest harness",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/server/src/services/program-battletest/harness.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "server-program-battletest-evaluator",
+      label: "Program battletest evaluator",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/server/src/services/program-battletest/evaluator.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "server-program-battletest-suite",
+      label: "Program battletest suite",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/server/src/services/program-battletest/suite.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "server-program-battletest-reporting",
+      label: "Program battletest reporting",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/server/src/services/program-battletest/reporting.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "server-program-battletest-report-artifacts",
+      label: "Program battletest report artifacts",
+      adapter: "shell",
+      package: "server",
+      cwd: rootDir,
+      command: ["yarn", "test:battletest:report"],
+      coverage: {
+        enabled: false
+      }
+    },
+    {
       id: "demo-renderer-tests",
       label: "Demo renderer tests",
       adapter: "shell",

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1",
+  "id": "hypothesis-strengthening",
+  "title": "Hypothesis Strengthening",
+  "theme": "A tentative theory that gains support over time",
+  "description": "Prompts that should cause the system to create a tentative hypothesis and then strengthen it as new evidence accumulates.",
+  "tags": ["hypotheses", "strengthening", "contextual-relevance"],
+  "seed": {
+    "mode": "copySeedDir",
+    "path": "../_shared/seed-empty"
+  },
+  "rounds": [
+    {
+      "id": "round-1",
+      "prompt": "I keep seeing 11:11 on the clock often enough that I notice it.",
+      "expectations": {
+        "decisionModes": ["create"]
+      }
+    },
+    {
+      "id": "round-2",
+      "prompt": "Once I have noticed a repeated thing, I start half-expecting it and then spotting it more.",
+      "expectations": {
+        "decisionModes": ["create", "append"],
+        "minimumContextualRelevance": 1,
+        "hypothesisDelta": {
+          "createdAtLeast": 0,
+          "createdAtMost": 1
+        }
+      }
+    },
+    {
+      "id": "round-3",
+      "prompt": "Reading about the frequency illusion feels uncomfortably close to what I am doing with repeated clock times.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "minimumContextualRelevance": 1,
+        "hypothesisDelta": {
+          "updatedAtLeast": 0,
+          "strengthenedAtLeast": 0
+        }
+      }
+    },
+    {
+      "id": "round-4",
+      "prompt": "The repeated-time thing makes more sense as selective attention than as a message.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "minimumContextualRelevance": 1,
+        "hypothesisDelta": {
+          "strengthenedAtLeast": 0,
+          "resolvedAtLeast": 0
+        }
+      }
+    }
+  ],
+  "checkpoints": [
+    {
+      "afterRound": 2,
+      "label": "The system should be willing to create a tentative bridge early",
+      "assertions": [
+        {
+          "type": "minimumFileCountInDir",
+          "path": "obsidian-repository/hypotheses",
+          "count": 1,
+          "reason": "A plausible but uncertain explanation path should be tracked as a hypothesis."
+        }
+      ]
+    }
+  ],
+  "finalAssertions": [
+    {
+      "type": "minimumFileCountInDir",
+      "path": "obsidian-repository/hypotheses",
+      "count": 1,
+      "reason": "The scenario should leave behind at least one tracked theory artifact."
+    },
+    {
+      "type": "auditIncludesDisposition",
+      "disposition": "supports_existing_topic",
+      "reason": "Later evidence should explicitly support the earlier note instead of staying disconnected."
+    }
+  ]
+}

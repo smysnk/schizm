@@ -1,0 +1,45 @@
+{
+  "nodes": [
+    {
+      "id": "fragment-clock",
+      "type": "file",
+      "x": 80,
+      "y": 80,
+      "width": 320,
+      "height": 180,
+      "file": "fragments/repeated-clock-time.md"
+    },
+    {
+      "id": "concept-frequency-illusion",
+      "type": "file",
+      "x": 520,
+      "y": 80,
+      "width": 320,
+      "height": 180,
+      "file": "concepts/frequency-illusion.md"
+    },
+    {
+      "id": "hypothesis-clock-frequency",
+      "type": "file",
+      "x": 300,
+      "y": 320,
+      "width": 360,
+      "height": 220,
+      "file": "hypotheses/repeated-clock-time-may-relate-to-frequency-illusion.md"
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-clock-hypothesis",
+      "fromNode": "hypothesis-clock-frequency",
+      "toNode": "fragment-clock",
+      "label": "possible explanation"
+    },
+    {
+      "id": "edge-frequency-hypothesis",
+      "fromNode": "hypothesis-clock-frequency",
+      "toNode": "concept-frequency-illusion",
+      "label": "possible context"
+    }
+  ]
+}

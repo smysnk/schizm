@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "1",
+  "id": "hidden-pattern-pair",
+  "title": "Hidden Pattern Pair",
+  "theme": "Mostly unrelated fragments with one striking pair",
+  "description": "A noisy set of prompts where only two fragments share a meaningful repeated pattern.",
+  "tags": ["noise", "pairing", "hypothesis-detection"],
+  "seed": {
+    "mode": "copySeedDir",
+    "path": "../_shared/seed-empty"
+  },
+  "rounds": [
+    {
+      "id": "round-1",
+      "prompt": "I leave receipts in jacket pockets for months without meaning to.",
+      "expectations": {
+        "decisionModes": ["create"]
+      }
+    },
+    {
+      "id": "round-2",
+      "prompt": "The smell of an old dish sponge means I will replace it immediately no matter what else I was doing.",
+      "expectations": {
+        "decisionModes": ["create"]
+      }
+    },
+    {
+      "id": "round-3",
+      "prompt": "I keep catching the clock at 11:11 often enough that it feels specific.",
+      "expectations": {
+        "decisionModes": ["create"],
+        "maximumContextualRelevance": 0
+      }
+    },
+    {
+      "id": "round-4",
+      "prompt": "The other time I keep seeing is 3:33, which makes the repeated-number thing feel hard to ignore.",
+      "expectations": {
+        "decisionModes": ["append", "integrate", "create"],
+        "minimumContextualRelevance": 1,
+        "hypothesisDelta": {
+          "createdAtLeast": 0,
+          "createdAtMost": 1
+        }
+      }
+    },
+    {
+      "id": "round-5",
+      "prompt": "Hardware stores make me vaguely sad in a way that seems unrelated to the number thing.",
+      "expectations": {
+        "decisionModes": ["create"],
+        "maximumContextualRelevance": 1
+      }
+    }
+  ],
+  "checkpoints": [
+    {
+      "afterRound": 4,
+      "label": "Only the repeated-number pair should trigger a tentative bridge",
+      "assertions": [
+        {
+          "type": "maximumFileCountInDir",
+          "path": "obsidian-repository/hypotheses",
+          "count": 1,
+          "reason": "The runner should isolate the strong pair without connecting the entire noisy set."
+        }
+      ]
+    }
+  ],
+  "finalAssertions": [
+    {
+      "type": "maximumFileCountInDir",
+      "path": "obsidian-repository/hypotheses",
+      "count": 1,
+      "reason": "One strong local pattern should not grow into many unsupported theories."
+    },
+    {
+      "type": "auditIncludesDisposition",
+      "disposition": "related_but_unproven",
+      "reason": "The repeated-number connection should stay tentative unless further evidence arrives."
+    }
+  ]
+}

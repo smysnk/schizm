@@ -1,0 +1,85 @@
+{
+  "schemaVersion": "1",
+  "id": "weak-similarities",
+  "title": "Weak Similarities",
+  "theme": "Tentative pattern detection without over-merging",
+  "description": "Fragments that may point toward a shared pattern but do not justify a confident merge too early.",
+  "tags": ["contextual-relevance", "hypotheses", "restraint"],
+  "seed": {
+    "mode": "copySeedDir",
+    "path": "../_shared/seed-empty"
+  },
+  "rounds": [
+    {
+      "id": "round-1",
+      "prompt": "I keep meaning to buy softer light bulbs for the apartment.",
+      "expectations": {
+        "decisionModes": ["create"]
+      }
+    },
+    {
+      "id": "round-2",
+      "prompt": "Coffee shops are only usable for me until the grinder starts going every few minutes.",
+      "expectations": {
+        "decisionModes": ["create", "append"],
+        "maximumContextualRelevance": 1
+      }
+    },
+    {
+      "id": "round-3",
+      "prompt": "I get weirdly irritable in big grocery stores even when nothing bad is happening.",
+      "expectations": {
+        "decisionModes": ["create", "append", "integrate"],
+        "minimumContextualRelevance": 1,
+        "hypothesisDelta": {
+          "createdAtLeast": 0,
+          "createdAtMost": 1
+        }
+      }
+    },
+    {
+      "id": "round-4",
+      "prompt": "It might be that I keep lowering the amount of input around me before I can think clearly.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "minimumContextualRelevance": 1,
+        "hypothesisDelta": {
+          "createdAtLeast": 0,
+          "updatedAtLeast": 0
+        }
+      }
+    }
+  ],
+  "checkpoints": [
+    {
+      "afterRound": 3,
+      "label": "Some tentative connection should exist by round three",
+      "assertions": [
+        {
+          "type": "auditIncludesDisposition",
+          "disposition": "related_but_unproven",
+          "reason": "The overlap should be noticed, but still presented cautiously."
+        }
+      ]
+    }
+  ],
+  "finalAssertions": [
+    {
+      "type": "minimumFileCountInDir",
+      "path": "obsidian-repository/hypotheses",
+      "count": 1,
+      "reason": "Weak similarities should usually produce a tracked tentative bridge."
+    },
+    {
+      "type": "maximumFileCountInDir",
+      "path": "obsidian-repository/hypotheses",
+      "count": 2,
+      "reason": "The agent should not explode one fuzzy cluster into many speculative theories."
+    },
+    {
+      "type": "auditIncludesDisposition",
+      "disposition": "related_but_unproven",
+      "reason": "The audit should record uncertainty rather than a forced conclusion."
+    }
+  ]
+}

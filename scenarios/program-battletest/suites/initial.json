@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1",
+  "id": "initial",
+  "title": "Initial Program Battletest Suite",
+  "description": "The starter suite that exercises separateness, tentative connections, hypothesis tracking, and practical note handling.",
+  "tags": ["starter", "phase-4", "initial-suite"],
+  "scenarios": [
+    "unrelated-fragments",
+    "weak-similarities",
+    "hidden-pattern-pair",
+    "hypothesis-strengthening",
+    "hypothesis-disproving",
+    "grocery-lists",
+    "reminders",
+    "birthdays"
+  ]
+}

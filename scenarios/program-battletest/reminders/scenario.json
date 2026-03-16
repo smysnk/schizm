@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1",
+  "id": "reminders",
+  "title": "Reminders",
+  "theme": "Simple reminders without conceptual inflation",
+  "description": "Tests that reminders remain direct and functional instead of being treated as deeper conceptual material.",
+  "tags": ["utility", "reminders", "practicality"],
+  "seed": {
+    "mode": "copySeedDir",
+    "path": "../_shared/seed-empty"
+  },
+  "rounds": [
+    {
+      "id": "round-1",
+      "prompt": "Reminders: call the dentist, return Alex's charger, refill the prescription.",
+      "expectations": {
+        "decisionModes": ["create", "append"]
+      }
+    },
+    {
+      "id": "round-2",
+      "prompt": "Add reminder to book a passport photo appointment.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    },
+    {
+      "id": "round-3",
+      "prompt": "Mark the charger reminder as high priority because Alex asked again.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    }
+  ],
+  "checkpoints": [],
+  "finalAssertions": [
+    {
+      "type": "maximumFileCountInDir",
+      "path": "obsidian-repository/hypotheses",
+      "count": 0,
+      "reason": "Reminder handling should stay lightweight and practical."
+    },
+    {
+      "type": "noUnexpectedHypothesisCreation",
+      "reason": "The system should not infer broader psychological meaning from basic reminders."
+    }
+  ]
+}

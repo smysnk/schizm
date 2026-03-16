@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "1",
+  "id": "birthdays",
+  "title": "Friends Birthdays",
+  "theme": "Durable personal reference data",
+  "description": "Tests that the repo can store names, dates, and gift notes as simple stable reference material.",
+  "tags": ["utility", "birthdays", "reference"],
+  "seed": {
+    "mode": "copySeedDir",
+    "path": "../_shared/seed-empty"
+  },
+  "rounds": [
+    {
+      "id": "round-1",
+      "prompt": "Friends birthdays: Maya on April 8, Theo on September 19, and Jules on December 2.",
+      "expectations": {
+        "decisionModes": ["create", "append"]
+      }
+    },
+    {
+      "id": "round-2",
+      "prompt": "Add that Maya usually likes plants and Theo likes cookbooks.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    },
+    {
+      "id": "round-3",
+      "prompt": "Add that I already messaged Jules last year so I should remember to do it again this year.",
+      "expectations": {
+        "decisionModes": ["append", "integrate"],
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    }
+  ],
+  "checkpoints": [],
+  "finalAssertions": [
+    {
+      "type": "maximumFileCountInDir",
+      "path": "obsidian-repository/hypotheses",
+      "count": 0,
+      "reason": "Birthday tracking should remain plain reference data."
+    },
+    {
+      "type": "noUnexpectedHypothesisCreation",
+      "reason": "The system should support durable personal reference notes without turning them into conceptual clusters."
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "1",
+  "id": "unrelated-fragments",
+  "title": "Unrelated Fragments",
+  "theme": "Separateness without invented links",
+  "description": "A sequence of everyday fragments that should largely remain unrelated, with little or no hypothesis creation.",
+  "tags": ["separateness", "restraint", "low-relatedness"],
+  "seed": {
+    "mode": "copySeedDir",
+    "path": "../_shared/seed-empty"
+  },
+  "rounds": [
+    {
+      "id": "round-1",
+      "prompt": "I need to replace the cracked protector on my phone.",
+      "expectations": {
+        "decisionModes": ["create"],
+        "maximumContextualRelevance": 0,
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    },
+    {
+      "id": "round-2",
+      "prompt": "I always end up buying the sour gummies and then pretending I only wanted one bag.",
+      "expectations": {
+        "decisionModes": ["create"],
+        "maximumContextualRelevance": 0,
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    },
+    {
+      "id": "round-3",
+      "prompt": "I had another airport dream where I missed the gate even though I was already in the building.",
+      "expectations": {
+        "decisionModes": ["create"],
+        "maximumContextualRelevance": 0,
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    },
+    {
+      "id": "round-4",
+      "prompt": "Cleaning the kitchen sink is the one chore that makes the whole room feel reset immediately.",
+      "expectations": {
+        "decisionModes": ["create"],
+        "maximumContextualRelevance": 0,
+        "hypothesisDelta": {
+          "createdAtMost": 0
+        }
+      }
+    }
+  ],
+  "checkpoints": [
+    {
+      "afterRound": 2,
+      "label": "No early hypothesis creation",
+      "assertions": [
+        {
+          "type": "maximumFileCountInDir",
+          "path": "obsidian-repository/hypotheses",
+          "count": 0,
+          "reason": "Two clearly unrelated prompts should not have created a theory bridge."
+        }
+      ]
+    }
+  ],
+  "finalAssertions": [
+    {
+      "type": "maximumFileCountInDir",
+      "path": "obsidian-repository/hypotheses",
+      "count": 0,
+      "reason": "Unrelated fragments should not produce hypothesis notes by default."
+    },
+    {
+      "type": "noUnexpectedHypothesisCreation",
+      "reason": "The agent should preserve separateness when there is no meaningful overlap."
+    }
+  ]
+}
