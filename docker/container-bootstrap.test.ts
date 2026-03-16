@@ -61,6 +61,7 @@ test("configure_ssh writes ~/.ssh/id_ed25519 with secure permissions", async () 
 
     await runBootstrapCommand("configure_ssh", {
       HOME: homeDirectory,
+      PATH: "/usr/bin:/bin",
       DOCUMENT_STORE_SSH_PRIVATE_KEY_BASE64: Buffer.from(privateKey, "utf8").toString("base64"),
       DOCUMENT_STORE_GIT_URL: ""
     });
@@ -87,6 +88,7 @@ test("configure_codex_auth restores ~/.codex/auth.json from base64", async () =>
 
     await runBootstrapCommand("configure_codex_auth", {
       HOME: homeDirectory,
+      PATH: "/usr/bin:/bin",
       CODEX_HOME: codexHome,
       CODEX_AUTH_JSON_BASE64: Buffer.from(authJson, "utf8").toString("base64")
     });

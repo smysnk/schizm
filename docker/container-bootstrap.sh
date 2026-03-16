@@ -8,15 +8,28 @@ decode_base64_to_file() {
   encoded_value="${1:-}"
   output_path="${2:-}"
 
-  python3 - "$encoded_value" "$output_path" <<'PY'
-import base64
-import pathlib
-import sys
+  if command -v base64 >/dev/null 2>&1; then
+    if printf '%s' "$encoded_value" | base64 --decode > "$output_path" 2>/dev/null; then
+      return 0
+    fi
 
-encoded = sys.argv[1]
-output_path = pathlib.Path(sys.argv[2])
-output_path.write_bytes(base64.b64decode(encoded))
-PY
+    if printf '%s' "$encoded_value" | base64 -d > "$output_path" 2>/dev/null; then
+      return 0
+    fi
+
+    if printf '%s' "$encoded_value" | base64 -D > "$output_path" 2>/dev/null; then
+      return 0
+    fi
+  fi
+
+  if command -v openssl >/dev/null 2>&1; then
+    if printf '%s' "$encoded_value" | openssl base64 -d -A > "$output_path" 2>/dev/null; then
+      return 0
+    fi
+  fi
+
+  echo "Unable to decode base64 payload: no compatible decoder is available." >&2
+  return 1
 }
 
 extract_git_host() {
