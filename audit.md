@@ -122,3 +122,97 @@
 }
 ```
 <!-- PROMPT-AUDIT-END:bfbbc0c7-9b52-48a6-8b3b-42b177bc25e4 -->
+<!-- PROMPT-AUDIT-START:adf3824d-23b9-44f7-a02e-d0362d28de39 -->
+## Prompt Round
+
+- Date: 2026-03-16T01:35:53Z
+- Prompt ID: adf3824d-23b9-44f7-a02e-d0362d28de39
+- Input Prompt: Roses are red, violets are blue.
+
+### Files Added
+- `fragments/roses-are-red-violets-are-blue.md`: Captured the submitted two-line text as its own minimal note so the fragment is preserved without adding interpretation.
+
+### Files Modified
+- `index.md`: Added a direct link to the new fragment and adjusted the overview text so the root note reflects the current corpus after the repository-root normalization.
+- `main.canvas`: Extended the canonical canvas with a node for the new fragment and kept file references aligned with the repository-root document-store layout.
+- `audit.md`: Appended this run's audit section at the repository root required by the current contract.
+
+### Files Deleted
+- None.
+
+### Files Moved or Renamed
+- `obsidian-repository/audit.md` -> `audit.md`: Moved the audit log to the repository root so the document store matches the current contract.
+- `obsidian-repository/index.md` -> `index.md`: Moved the root note to the repository root so note paths align with the current document-store root.
+- `obsidian-repository/main.canvas` -> `main.canvas`: Moved the canonical canvas to the repository root so the central map matches the current contract.
+- `obsidian-repository/concepts/conversational-thought-clarifier.md` -> `concepts/conversational-thought-clarifier.md`: Moved the concept note to the repository root document-store layout.
+- `obsidian-repository/concepts/thought-capture-inbox.md` -> `concepts/thought-capture-inbox.md`: Moved the concept note to the repository root document-store layout.
+- `obsidian-repository/journals/dream-journal.md` -> `journals/dream-journal.md`: Moved the journal note to the repository root document-store layout.
+
+### Canvas Updates
+- `main.canvas`: Added a file node for `fragments/roses-are-red-violets-are-blue.md` and preserved the existing concept-map structure while normalizing the canonical canvas to the repository root.
+
+### Git
+- Branch: codex/mindmap
+- Commit: pending-at-audit-write-time
+
+```json
+{
+  "promptId": "adf3824d-23b9-44f7-a02e-d0362d28de39",
+  "branch": "codex/mindmap",
+  "sha": null,
+  "decision": {
+    "mode": "create"
+  },
+  "added": [
+    "fragments/roses-are-red-violets-are-blue.md"
+  ],
+  "modified": [
+    "index.md",
+    "main.canvas",
+    "audit.md"
+  ],
+  "deleted": [],
+  "moved": [
+    {
+      "from": "obsidian-repository/audit.md",
+      "to": "audit.md"
+    },
+    {
+      "from": "obsidian-repository/index.md",
+      "to": "index.md"
+    },
+    {
+      "from": "obsidian-repository/main.canvas",
+      "to": "main.canvas"
+    },
+    {
+      "from": "obsidian-repository/concepts/conversational-thought-clarifier.md",
+      "to": "concepts/conversational-thought-clarifier.md"
+    },
+    {
+      "from": "obsidian-repository/concepts/thought-capture-inbox.md",
+      "to": "concepts/thought-capture-inbox.md"
+    },
+    {
+      "from": "obsidian-repository/journals/dream-journal.md",
+      "to": "journals/dream-journal.md"
+    }
+  ],
+  "canvas": [
+    "main.canvas"
+  ],
+  "rationales": {
+    "fragments/roses-are-red-violets-are-blue.md": "Stored the exact submitted text as a standalone fragment without elaborating on it.",
+    "index.md": "Updated the repository overview so the new fragment is discoverable and the note paths match the repository-root layout.",
+    "main.canvas": "Kept the canonical map synchronized with both the new fragment and the repository-root path normalization.",
+    "audit.md": "Recorded this run in the append-only audit log at the contract-defined root location.",
+    "obsidian-repository/audit.md -> audit.md": "Normalized the audit log path to the repository root required by the current run contract.",
+    "obsidian-repository/index.md -> index.md": "Normalized the root note path to the repository root required by the current run contract.",
+    "obsidian-repository/main.canvas -> main.canvas": "Normalized the canonical canvas path to the repository root required by the current run contract.",
+    "obsidian-repository/concepts/conversational-thought-clarifier.md -> concepts/conversational-thought-clarifier.md": "Normalized the note path to keep all document-store files under the repository root.",
+    "obsidian-repository/concepts/thought-capture-inbox.md -> concepts/thought-capture-inbox.md": "Normalized the note path to keep all document-store files under the repository root.",
+    "obsidian-repository/journals/dream-journal.md -> journals/dream-journal.md": "Normalized the note path to keep all document-store files under the repository root."
+  }
+}
+```
+<!-- PROMPT-AUDIT-END:adf3824d-23b9-44f7-a02e-d0362d28de39 -->
