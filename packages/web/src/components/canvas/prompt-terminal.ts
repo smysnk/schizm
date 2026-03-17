@@ -16,6 +16,9 @@ export type PromptTerminalEntry = {
   kind: PromptTerminalKind;
 };
 
+const ansiFaint = "\u001b[2m";
+const ansiReset = "\u001b[0m";
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
@@ -178,6 +181,29 @@ export const buildPromptTerminalWorkingEntry = (
     tone: "system",
     kind: "status"
   };
+};
+
+export const buildPromptTerminalBuffer = (
+  promptContent: string,
+  entries: PromptTerminalEntry[]
+) => {
+  const lines = [promptContent];
+
+  for (const entry of entries) {
+    if (!entry.text) {
+      lines.push("");
+      continue;
+    }
+
+    if (entry.tone === "system") {
+      lines.push(`${ansiFaint}${entry.text}${ansiReset}`);
+      continue;
+    }
+
+    lines.push(entry.text);
+  }
+
+  return lines.join("\n");
 };
 
 export const getNextTypedTerminalEntries = (

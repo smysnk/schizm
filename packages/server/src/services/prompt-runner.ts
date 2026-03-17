@@ -3,7 +3,9 @@ import { createWriteStream, existsSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { promisify } from "node:util";
+import type { PoolClient } from "pg";
 import { env } from "../config/env";
+import { pool } from "../db/pool";
 import {
   ensureGitRepository,
   finalizePromptWorktree,
@@ -112,6 +114,8 @@ type FailureTelemetry = JsonObject & {
   statusAtFailure: string;
   message: string;
 };
+
+const PROMPT_RUNNER_LEASE_KEY = 41_042_006;
 
 export type PromptRunnerStateSnapshot = {
   paused: boolean;
@@ -465,6 +469,7 @@ export class PromptRunner {
   private ticking = false;
   private processingPrompt = false;
   private paused = false;
+  private leaseClient: PoolClient | null = null;
   private activePromptId: string | null = null;
   private activePromptStatus: PromptStatus | null = null;
   private readonly runnerSessionId = `runner-${process.pid}-${Date.now()}`;
@@ -553,14 +558,62 @@ export class PromptRunner {
     };
   }
 
+  private async acquireProcessingLease() {
+    if (this.leaseClient) {
+      return true;
+    }
+
+    const client = await pool.connect();
+
+    try {
+      const result = await client.query<{ acquired: boolean }>(
+        "SELECT pg_try_advisory_lock($1) AS acquired",
+        [PROMPT_RUNNER_LEASE_KEY]
+      );
+
+      if (!result.rows[0]?.acquired) {
+        client.release();
+        return false;
+      }
+
+      this.leaseClient = client;
+      return true;
+    } catch (error) {
+      client.release();
+      throw error;
+    }
+  }
+
+  private async releaseProcessingLease() {
+    const client = this.leaseClient;
+    this.leaseClient = null;
+
+    if (!client) {
+      return;
+    }
+
+    try {
+      await client.query("SELECT pg_advisory_unlock($1)", [PROMPT_RUNNER_LEASE_KEY]);
+    } finally {
+      client.release();
+    }
+  }
+
   private async tick() {
     if (this.ticking || this.paused) {
       return;
     }
 
     this.ticking = true;
+    let leaseAcquired = false;
 
     try {
+      leaseAcquired = await this.acquireProcessingLease();
+
+      if (!leaseAcquired) {
+        return;
+      }
+
       const prompt = await claimNextQueuedPrompt();
 
       if (!prompt) {
@@ -572,6 +625,9 @@ export class PromptRunner {
     } catch (error) {
       console.error("Prompt runner tick failed", error);
     } finally {
+      if (leaseAcquired) {
+        await this.releaseProcessingLease();
+      }
       this.ticking = false;
     }
   }

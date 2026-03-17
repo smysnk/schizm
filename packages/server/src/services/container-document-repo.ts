@@ -13,6 +13,20 @@ const runGit = async (repoRoot: string, args: string[]) => {
   return stdout.trim();
 };
 
+const resolveCommitSha = async (repoRoot: string, sha: string) => {
+  const normalized = sha.trim();
+
+  if (!normalized) {
+    return "";
+  }
+
+  try {
+    return await runGit(repoRoot, ["rev-parse", `${normalized}^{commit}`]);
+  } catch {
+    return normalized;
+  }
+};
+
 export type ContainerRepoVerificationResult = {
   branch: string;
   remoteName: string;
@@ -33,8 +47,11 @@ export const verifyContainerDocumentRepoPush = async ({
 }): Promise<ContainerRepoVerificationResult> => {
   const headSha = await runGit(repoRoot, ["rev-parse", "HEAD"]);
   const workingTreeStatus = await runGit(repoRoot, ["status", "--porcelain"]);
+  const normalizedExpectedCommitSha = expectedCommitSha
+    ? await resolveCommitSha(repoRoot, expectedCommitSha)
+    : "";
 
-  if (expectedCommitSha && headSha !== expectedCommitSha) {
+  if (normalizedExpectedCommitSha && headSha !== normalizedExpectedCommitSha) {
     throw new Error(
       `Container document store HEAD mismatch. Expected ${expectedCommitSha}, received ${headSha}.`
     );

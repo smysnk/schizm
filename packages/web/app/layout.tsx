@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { IBM_Plex_Mono, Space_Grotesk } from "next/font/google";
+import "react-retro-lcd/styles.css";
 import { AppProviders } from "../src/components/providers/app-providers";
 import { getRuntimeConfig } from "../src/lib/runtime-config.server";
 import "./globals.css";

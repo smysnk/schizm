@@ -3,12 +3,10 @@
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import {
   useEffect,
-  useLayoutEffect,
   useRef,
-  useState,
-  type FormEvent,
-  type KeyboardEvent as ReactKeyboardEvent
+  useState
 } from "react";
+import { RetroLcd, useRetroLcdController } from "react-retro-lcd";
 import {
   CANCEL_PROMPT_MUTATION,
   CREATE_PROMPT_MUTATION,
@@ -41,6 +39,7 @@ import {
   PROMPT_ZEN_TERMINAL_WORKING_TICK_MS
 } from "./prompt-zen.constants";
 import {
+  buildPromptTerminalBuffer,
   buildPromptTerminalEntries,
   buildPromptTerminalWorkingEntry,
   getNextTypedTerminalEntries,
@@ -317,10 +316,8 @@ export function IdeaCanvas() {
   const runtimeConfig = readRuntimeConfig();
   const realtimeConnectionStatus = useRealtimeConnectionStatus();
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
-  const promptCursorMarkerRef = useRef<HTMLSpanElement | null>(null);
-  const promptTerminalViewportRef = useRef<HTMLDivElement | null>(null);
-  const promptTerminalContentRef = useRef<HTMLDivElement | null>(null);
   const promptPlaceholderQuestionIndexRef = useRef(0);
+  const promptTerminalController = useRetroLcdController({ cursorMode: "hollow" });
   const [promptInput, setPromptInput] = useState("");
   const [animatedPromptText, setAnimatedPromptText] = useState("");
   const [promptInputFocused, setPromptInputFocused] = useState(false);
@@ -331,14 +328,6 @@ export function IdeaCanvas() {
   >([]);
   const [promptTerminalWorkingDots, setPromptTerminalWorkingDots] = useState(1);
   const [promptTerminalHasOverflow, setPromptTerminalHasOverflow] = useState(false);
-  const [promptSelectionStart, setPromptSelectionStart] = useState(0);
-  const [promptCursorPosition, setPromptCursorPosition] = useState({
-    left: 0,
-    top: 0,
-    width: 16,
-    height: 24
-  });
-  const [promptSubmitError, setPromptSubmitError] = useState<string | null>(null);
   const [historyFilter, setHistoryFilter] = useState<PromptHistoryFilter>("all");
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const [activeSurface, setActiveSurface] = useState<WorkspaceSurface>("prompt");
@@ -361,10 +350,9 @@ export function IdeaCanvas() {
     }
   );
 
-  const [createPromptMutation, { loading: createPromptLoading }] = useMutation<
-    CreatePromptResponse,
-    CreatePromptVariables
-  >(CREATE_PROMPT_MUTATION);
+  const [createPromptMutation] = useMutation<CreatePromptResponse, CreatePromptVariables>(
+    CREATE_PROMPT_MUTATION
+  );
   const [cancelPromptMutation, { loading: cancelPromptLoading }] = useMutation<
     CancelPromptResponse,
     { id: string }
@@ -429,6 +417,12 @@ export function IdeaCanvas() {
   const promptTerminalWorkingEntry = promptTerminalShouldShowWorking
     ? buildPromptTerminalWorkingEntry(promptTerminalPrompt, promptTerminalWorkingDots)
     : null;
+  const promptTerminalCursorVisible = Boolean(
+    promptTerminalSession &&
+      (promptTerminalTypingEntryId ||
+        typedPromptTerminalEntries.length < promptTerminalTargetEntries.length ||
+        promptTerminalShouldShowWorking)
+  );
   const promptTerminalStatusCount = typedPromptTerminalEntries.filter(
     (entry) => entry.kind === "status" || entry.kind === "failure" || entry.kind === "git"
   ).length;
@@ -438,18 +432,9 @@ export function IdeaCanvas() {
         ...(promptTerminalWorkingEntry ? [promptTerminalWorkingEntry] : [])
       ]
     : [];
-  const promptCursorDisplayValue =
-    promptInput.length > 0 ? promptInput : promptInputFocused ? "" : animatedPromptText;
-  const promptCursorIndex =
-    promptInput.length > 0
-      ? Math.min(promptSelectionStart, promptInput.length)
-      : promptInputFocused
-        ? 0
-        : animatedPromptText.length;
-  const promptCursorLeadingText = promptCursorDisplayValue.slice(0, promptCursorIndex);
-  const promptCursorTrailingText = promptCursorDisplayValue.slice(promptCursorIndex);
-  const showPromptCursor =
-    !promptTerminalSession && (promptInputFocused || promptInput.length === 0);
+  const promptTerminalBuffer = promptTerminalSession
+    ? buildPromptTerminalBuffer(promptTerminalSession.content, promptTerminalEntries)
+    : "";
   const runnerStatusTone = promptRunnerState?.paused
     ? "workspace__footer-note--warning"
     : promptRunnerState?.inFlight
@@ -547,32 +532,25 @@ export function IdeaCanvas() {
     };
   }, [promptTerminalShouldShowWorking, promptTerminalPrompt?.id, promptTerminalPrompt?.status]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    promptTerminalController.reset();
+    promptTerminalController.setCursorMode("hollow");
+
     if (!promptTerminalSession) {
+      promptTerminalController.setCursorVisible(false);
+      setPromptTerminalHasOverflow(false);
       return;
     }
 
-    const viewport = promptTerminalViewportRef.current;
-    const content = promptTerminalContentRef.current;
-
-    if (!viewport || !content) {
-      return;
-    }
-
-    const updateOverflow = () => {
-      setPromptTerminalHasOverflow(content.scrollHeight > viewport.clientHeight + 1);
-    };
-
-    updateOverflow();
-
-    const resizeObserver = new ResizeObserver(updateOverflow);
-    resizeObserver.observe(viewport);
-    resizeObserver.observe(content);
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [promptTerminalEntries, promptTerminalSession]);
+    promptTerminalController.write(promptTerminalBuffer);
+    promptTerminalController.setCursorVisible(promptTerminalCursorVisible);
+    setPromptTerminalHasOverflow(promptTerminalController.getSnapshot().scrollback.length > 0);
+  }, [
+    promptTerminalBuffer,
+    promptTerminalController,
+    promptTerminalCursorVisible,
+    promptTerminalSession
+  ]);
 
   useEffect(() => {
     if (
@@ -710,56 +688,14 @@ export function IdeaCanvas() {
     };
   }, [activeSurface, promptInput.length, promptInputFocused, promptTerminalSession]);
 
-  useLayoutEffect(() => {
-    if (!showPromptCursor || activeSurface !== "prompt" || promptTerminalSession) {
-      return;
-    }
-
-    const updatePromptCursorPosition = () => {
-      const marker = promptCursorMarkerRef.current;
-
-      if (!marker) {
-        return;
-      }
-
-      const lineHeight = Number.parseFloat(window.getComputedStyle(marker).lineHeight) || 0;
-      const cursorHeight = Math.max(18, Math.round(lineHeight * 0.9));
-      const cursorWidth = Math.max(12, Math.round(lineHeight * 0.5));
-      const topOffset = Math.max(0, (lineHeight - cursorHeight) / 2);
-
-      setPromptCursorPosition({
-        left: marker.offsetLeft,
-        top: marker.offsetTop + topOffset,
-        width: cursorWidth,
-        height: cursorHeight
-      });
-    };
-
-    updatePromptCursorPosition();
-    window.addEventListener("resize", updatePromptCursorPosition);
-
-    return () => {
-      window.removeEventListener("resize", updatePromptCursorPosition);
-    };
-  }, [
-    activeSurface,
-    promptCursorLeadingText,
-    promptCursorTrailingText,
-    promptCursorIndex,
-    promptTerminalSession,
-    showPromptCursor
-  ]);
-
   const submitPrompt = async (rawContent: string) => {
     const content = rawContent.trim();
     if (!content) {
       const message = "Enter a prompt before queueing a run.";
-      setPromptSubmitError(message);
       setStatusLabel(message);
       return;
     }
 
-    setPromptSubmitError(null);
     setStatusLabel("Queueing prompt.");
 
     try {
@@ -793,27 +729,8 @@ export function IdeaCanvas() {
     } catch (mutationError) {
       const message =
         mutationError instanceof Error ? mutationError.message : "Failed to queue prompt.";
-      setPromptSubmitError(message);
       setStatusLabel(message);
     }
-  };
-
-  const handlePromptSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    await submitPrompt(promptInput);
-  };
-
-  const handlePromptKeyDown = async (event: ReactKeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key !== "Enter" || event.shiftKey || event.nativeEvent.isComposing) {
-      return;
-    }
-
-    event.preventDefault();
-    await submitPrompt(promptInput);
-  };
-
-  const syncPromptSelection = (selectionStart: number | null) => {
-    setPromptSelectionStart(selectionStart ?? 0);
   };
 
   const handleCancelPrompt = async () => {
@@ -900,113 +817,53 @@ export function IdeaCanvas() {
         <section className={`workspace__content workspace__content--${activeSurface}`}>
           {activeSurface === "prompt" ? (
             <div className="prompt-zen">
-              <form
-                className="workspace-panel workspace-panel--strong prompt-zen__form"
+              <div
+                className="prompt-zen__frame"
                 data-mode={promptTerminalSession ? "terminal" : "compose"}
                 data-testid="prompt-zen-form"
-                onSubmit={handlePromptSubmit}
               >
-                <div className="prompt-zen__halo" aria-hidden="true" />
-                <div
-                  className="prompt-zen__core"
-                  data-empty={promptInput.length === 0}
-                  data-mode={promptTerminalSession ? "terminal" : "compose"}
-                >
-                  {promptTerminalSession ? (
-                    <div
-                      className="prompt-zen__terminal"
-                      data-testid="prompt-terminal"
-                      ref={promptTerminalViewportRef}
-                      role="status"
-                      aria-live="polite"
-                    >
-                      <div
-                        className="prompt-zen__terminal-content"
-                        data-testid="prompt-terminal-content"
-                        ref={promptTerminalContentRef}
-                      >
-                        <p
-                          className="prompt-zen__terminal-entry prompt-zen__terminal-entry--user"
-                          data-testid="prompt-terminal-user"
-                        >
-                          {promptTerminalSession.content}
-                        </p>
-                        {promptTerminalEntries.map((entry) => (
-                          <p
-                            key={entry.id}
-                            className={`prompt-zen__terminal-entry prompt-zen__terminal-entry--${entry.tone}`}
-                            data-kind={entry.kind}
-                            data-testid={entry.id.startsWith("working-") ? "prompt-terminal-working" : undefined}
-                          >
-                            {entry.text}
-                            {promptTerminalTypingEntryId === entry.id ||
-                            (promptTerminalWorkingEntry?.id === entry.id &&
-                              promptTerminalShouldShowWorking) ? (
-                              <span
-                                className="prompt-zen__terminal-cursor"
-                                aria-hidden="true"
-                              />
-                            ) : null}
-                          </p>
-                        ))}
-                      </div>
+                {promptTerminalSession ? (
+                  <div
+                    className="prompt-zen__terminal-shell"
+                    data-testid="prompt-terminal"
+                    data-overflow={promptTerminalHasOverflow ? "true" : "false"}
+                  >
+                    <RetroLcd
+                      mode="terminal"
+                      controller={promptTerminalController}
+                      cursorMode="hollow"
+                      color="#97ff9b"
+                      className="prompt-zen__lcd prompt-zen__lcd--terminal"
+                    />
+                    <div className="sr-only" data-testid="prompt-terminal-user">
+                      {promptTerminalSession.content}
                     </div>
-                  ) : (
-                    <>
-                      <div className="prompt-zen__cursor-measure" aria-hidden="true">
-                        {promptCursorLeadingText}
-                        <span className="prompt-zen__cursor-anchor" ref={promptCursorMarkerRef}>
-                          {"\u200b"}
-                        </span>
-                        {promptCursorTrailingText || " "}
-                      </div>
-                      {showPromptCursor ? (
-                        <span
-                          className="prompt-zen__cursor"
-                          data-testid="prompt-compose-cursor"
-                          aria-hidden="true"
-                          style={{
-                            left: `${promptCursorPosition.left}px`,
-                            top: `${promptCursorPosition.top}px`,
-                            width: `${promptCursorPosition.width}px`,
-                            height: `${promptCursorPosition.height}px`
-                          }}
-                        />
-                      ) : null}
-                      <label className="sr-only" htmlFor="prompt-input">
-                        New prompt
-                      </label>
-                      <textarea
-                        id="prompt-input"
-                        name="prompt"
-                        rows={8}
-                        value={promptInput}
-                        onChange={(event) => {
-                          setPromptInput(event.target.value);
-                          syncPromptSelection(event.currentTarget.selectionStart);
-                        }}
-                        onFocus={(event) => {
-                          setPromptInputFocused(true);
-                          syncPromptSelection(event.currentTarget.selectionStart);
-                        }}
-                        onBlur={() => setPromptInputFocused(false)}
-                        onClick={(event) => syncPromptSelection(event.currentTarget.selectionStart)}
-                        onKeyDown={handlePromptKeyDown}
-                        onKeyUp={(event) => syncPromptSelection(event.currentTarget.selectionStart)}
-                        onSelect={(event) => syncPromptSelection(event.currentTarget.selectionStart)}
-                        placeholder={promptInputFocused ? "" : animatedPromptText}
-                      />
-                    </>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  className="sr-only"
-                  disabled={Boolean(promptTerminalSession) || createPromptLoading || !promptInput.trim()}
-                >
-                  {createPromptLoading ? "Queueing..." : "Queue prompt"}
-                </button>
-              </form>
+                    <div className="sr-only" data-testid="prompt-terminal-content">
+                      {promptTerminalBuffer.replace(/\u001b\[[0-9;]*m/gu, "")}
+                    </div>
+                    <div
+                      className="sr-only"
+                      data-testid="prompt-terminal-working"
+                      aria-hidden={promptTerminalShouldShowWorking ? undefined : true}
+                    >
+                      {promptTerminalWorkingEntry?.text || ""}
+                    </div>
+                  </div>
+                ) : (
+                  <RetroLcd
+                    mode="value"
+                    value={promptInput}
+                    editable
+                    placeholder={animatedPromptText}
+                    cursorMode="solid"
+                    color="#97ff9b"
+                    className="prompt-zen__lcd"
+                    onChange={setPromptInput}
+                    onSubmit={submitPrompt}
+                    onFocusChange={setPromptInputFocused}
+                  />
+                )}
+              </div>
             </div>
           ) : (
             <section className="history-surface">
@@ -1271,18 +1128,6 @@ export function IdeaCanvas() {
                 </button>
               ))}
             </div>
-          </div>
-
-          <div className="workspace__footer-items">
-            <a
-              className="workspace__footer-note workspace__repo-link"
-              href={repoUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span>{repoLabel}</span>
-              <GitHubMark />
-            </a>
             <button
               type="button"
               className="workspace__footer-note workspace__runner-toggle"
@@ -1293,6 +1138,31 @@ export function IdeaCanvas() {
             >
               {promptRunnerState?.paused ? <PlayMark /> : <PauseMark />}
             </button>
+            <span className={`workspace__footer-note ${runnerStatusTone}`.trim()}>
+              {runnerStatusLabel}
+            </span>
+            <span
+              className={`workspace__footer-note workspace__socket-status ${getRealtimeConnectionTone(realtimeConnectionStatus)}`.trim()}
+              aria-label={formatRealtimeConnectionStatus(realtimeConnectionStatus)}
+              title={formatRealtimeConnectionStatus(realtimeConnectionStatus)}
+            >
+              <span className="workspace__socket-status-dot" aria-hidden="true" />
+              <span className="workspace__socket-status-text">
+                {formatRealtimeConnectionStatus(realtimeConnectionStatus)}
+              </span>
+            </span>
+          </div>
+
+          <div className="workspace__footer-utilities">
+            <a
+              className="workspace__footer-note workspace__repo-link"
+              href={repoUrl}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>{repoLabel}</span>
+              <GitHubMark />
+            </a>
             <div
               className="workspace__footer-menu"
               data-open={themeMenuOpen}
@@ -1315,12 +1185,6 @@ export function IdeaCanvas() {
                 <ThemeToggle onSelect={() => setThemeMenuOpen(false)} />
               </div>
             </div>
-            <span className={`workspace__footer-note ${runnerStatusTone}`.trim()}>
-              {runnerStatusLabel}
-            </span>
-            <span className={`workspace__footer-note ${getRealtimeConnectionTone(realtimeConnectionStatus)}`.trim()}>
-              {formatRealtimeConnectionStatus(realtimeConnectionStatus)}
-            </span>
           </div>
         </header>
       </div>

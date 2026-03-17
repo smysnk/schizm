@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { PromptRecord, PromptStatus } from "../../lib/graphql";
 import {
+  buildPromptTerminalBuffer,
   buildPromptTerminalEntries,
   buildPromptTerminalWorkingEntry,
   getNextTypedTerminalEntries
@@ -94,6 +95,24 @@ test("buildPromptTerminalWorkingEntry shows an active working line only for in-f
     kind: "status"
   });
   assert.equal(buildPromptTerminalWorkingEntry(completedPrompt, 2), null);
+});
+
+test("buildPromptTerminalBuffer keeps user text plain and dims system lines with ansi", () => {
+  const buffer = buildPromptTerminalBuffer("User line", [
+    { id: "ack", text: "OK", tone: "system", kind: "ack" },
+    { id: "blank", text: "", tone: "system", kind: "blank" },
+    { id: "status", text: "# running codex cli", tone: "system", kind: "status" }
+  ]);
+
+  assert.equal(
+    buffer,
+    [
+      "User line",
+      "\u001b[2mOK\u001b[0m",
+      "",
+      "\u001b[2m# running codex cli\u001b[0m"
+    ].join("\n")
+  );
 });
 
 test("getNextTypedTerminalEntries types one character at a time and pauses at line boundaries", () => {

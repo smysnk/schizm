@@ -19,6 +19,7 @@ coverage
 .codex-workdirs
 .workdirs
 .worktrees
+references/
 
 # Local test and demo artifacts
 playwright-report

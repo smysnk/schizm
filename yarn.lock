@@ -3233,6 +3233,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-retro-lcd@file:../../references/react-retro-display::locator=web%40workspace%3Apackages%2Fweb":
+  version: 0.1.0
+  resolution: "react-retro-lcd@file:../../references/react-retro-display#../../references/react-retro-display::hash=a8a362&locator=web%40workspace%3Apackages%2Fweb"
+  peerDependencies:
+    react: ^18.2.0 || ^19.0.0
+    react-dom: ^18.2.0 || ^19.0.0
+  checksum: 10c0/0dea0580ce39cf920a91c4657f5d7763dfbc5e641229a41a31ac1dd6a8b6df58135eaa9f065ec5721a4520e4aa25790e4b70f4d73c916fd56fd06c36ef315156
+  languageName: node
+  linkType: hard
+
 "react@npm:^18.1.0":
   version: 18.3.1
   resolution: "react@npm:18.3.1"
@@ -4038,6 +4048,7 @@ __metadata:
     next: "npm:^15.5.12"
     react: "npm:^18.1.0"
     react-dom: "npm:^18.1.0"
+    react-retro-lcd: "file:../../references/react-retro-display"
     typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft

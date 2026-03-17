@@ -341,6 +341,32 @@ a {
   padding: 24px 0;
 }
 
+.prompt-zen__frame {
+  width: min(840px, calc(100vw - 88px));
+  max-width: 100%;
+}
+
+.prompt-zen__lcd.retro-lcd {
+  width: 100%;
+  max-width: none;
+  min-height: 220px;
+}
+
+.prompt-zen__lcd .retro-lcd__viewport {
+  padding: 34px 38px;
+}
+
+.prompt-zen__lcd .retro-lcd__grid {
+  font-size: clamp(21px, 2.8vw, 28px);
+  line-height: 1.62;
+  letter-spacing: 0.015em;
+}
+
+.prompt-zen__lcd .retro-lcd__screen,
+.prompt-zen__lcd .retro-lcd__bezel {
+  border-radius: 10px;
+}
+
 .prompt-zen__form {
   --prompt-ink: #97ff9b;
   --prompt-ink-soft: #71be74;
@@ -1284,6 +1310,7 @@ a {
   align-items: center;
   gap: 8px;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .workspace__footer-label {
@@ -1301,16 +1328,17 @@ a {
   font-weight: 500;
 }
 
-.workspace__footer-items {
+.workspace__footer-utilities {
   display: flex;
-  flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
   align-items: stretch;
+  flex: 0 0 auto;
 }
 
 .workspace__footer-toggle {
   background: transparent;
+  flex-wrap: nowrap;
 }
 
 .workspace__footer .surface-toggle {
@@ -1380,6 +1408,7 @@ a {
 .workspace__footer-note {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   padding: 5px 8px;
   border-radius: 6px;
@@ -1390,6 +1419,7 @@ a {
   font-size: 9px;
   letter-spacing: 0.04em;
   line-height: 1.1;
+  flex: 0 0 auto;
 }
 
 .workspace__repo-link {
@@ -1431,6 +1461,19 @@ a {
   min-width: 28px;
   padding-left: 8px;
   padding-right: 8px;
+}
+
+.workspace__socket-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+  flex: 0 0 auto;
+}
+
+.workspace__socket-status-text {
+  display: inline;
 }
 
 .workspace__footer-note--positive {
@@ -1518,8 +1561,6 @@ a {
 
   .surface-toggle,
   .theme-toggle,
-  .workspace__footer,
-  .workspace__footer-items,
   .history-surface__toolbar,
   .history-surface__toolbar-actions,
   .activity-panel__header,
@@ -1530,18 +1571,25 @@ a {
     align-items: flex-start;
   }
 
-  .workspace__footer-primary,
-  .workspace__footer-items {
-    width: 100%;
-  }
-
-  .surface-toggle {
-    width: 100%;
-  }
-
   .prompt-zen {
     min-height: calc(100vh - 148px);
     padding: 12px 0;
+  }
+
+  .prompt-zen__frame {
+    width: min(100%, calc(100vw - 28px));
+  }
+
+  .prompt-zen__lcd.retro-lcd {
+    min-height: 240px;
+  }
+
+  .prompt-zen__lcd .retro-lcd__viewport {
+    padding: 24px 22px;
+  }
+
+  .prompt-zen__lcd .retro-lcd__grid {
+    font-size: clamp(20px, 6vw, 26px);
   }
 
   .prompt-zen__form {
@@ -1566,14 +1614,89 @@ a {
     justify-content: center;
   }
 
-  .workspace__footer-menu,
-  .workspace__footer-menu-content {
+  .workspace__footer {
+    gap: 0;
+    padding: 6px 10px;
+    overflow: hidden;
+  }
+
+  .workspace__footer-primary {
     width: 100%;
+    gap: 6px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .workspace__footer-primary::-webkit-scrollbar {
+    display: none;
+  }
+
+  .workspace__footer-toggle {
+    width: auto;
+    flex-wrap: nowrap;
+  }
+
+  .workspace__footer .surface-toggle {
+    width: auto;
+    flex-direction: row;
+    flex-wrap: nowrap;
+  }
+
+  .workspace__footer .surface-toggle__button {
+    flex: 0 0 auto;
+  }
+
+  .workspace__footer-label,
+  .workspace__footer-note,
+  .workspace__footer-menu-trigger {
+    white-space: nowrap;
+  }
+
+  .workspace__footer-utilities {
+    position: fixed;
+    right: 14px;
+    bottom: 14px;
+    z-index: 32;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .workspace__repo-link,
+  .workspace__footer-menu-trigger {
+    min-height: 34px;
+  }
+
+  .workspace__footer-menu {
+    width: auto;
   }
 
   .workspace__footer-menu-content {
-    left: 0;
-    right: auto;
+    width: max-content;
+    min-width: 148px;
+    left: auto;
+    right: 0;
+    top: auto;
+    bottom: calc(100% + 6px);
+  }
+
+  .workspace__socket-status {
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0;
+    gap: 0;
+    border-radius: 999px;
+  }
+
+  .workspace__socket-status-text {
+    display: none;
+  }
+
+  .workspace__socket-status-dot {
+    width: 9px;
+    height: 9px;
   }
 
   .prompt-form textarea {

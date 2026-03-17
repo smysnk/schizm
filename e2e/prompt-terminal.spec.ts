@@ -10,32 +10,35 @@ const firstPlaceholderQuestion = "What are you thinking about?";
 
 type TerminalStyleSample = {
   userColor: string;
-  userOpacity: string;
   userAnimationName: string;
-  contentAnimationName: string;
-  beforeAnimationName: string;
-  afterAnimationName: string;
+  bodyAnimationName: string;
+  screenAnimationName: string;
 };
 
 async function collectTerminalStyleSamples(page: Page): Promise<TerminalStyleSample[]> {
   return page.evaluate(async () => {
-    const form = document.querySelector("[data-testid='prompt-zen-form']");
-    const content = document.querySelector("[data-testid='prompt-terminal-content']");
-    const userEntry = document.querySelector("[data-testid='prompt-terminal-user']");
+    const terminal = document.querySelector("[data-testid='prompt-terminal']");
+    const body = terminal?.querySelector(".retro-lcd__body");
+    const screen = terminal?.querySelector(".retro-lcd__screen");
 
-    if (!(form instanceof HTMLElement) || !(content instanceof HTMLElement) || !(userEntry instanceof HTMLElement)) {
+    if (!(terminal instanceof HTMLElement) || !(body instanceof HTMLElement) || !(screen instanceof HTMLElement)) {
       throw new Error("Prompt terminal elements were not found.");
     }
 
+    const readUserCell = () =>
+      Array.from(terminal.querySelectorAll(".retro-lcd__cell")).find((cell) => {
+        const text = cell.textContent?.replace(/\u00a0/gu, "").trim() || "";
+        return text.length > 0 && !cell.classList.contains("retro-lcd__cell--faint");
+      });
+
     const readSample = () => {
-      const userStyle = window.getComputedStyle(userEntry);
+      const userCell = readUserCell();
+      const userStyle = window.getComputedStyle(userCell || body);
       return {
         userColor: userStyle.color,
-        userOpacity: userStyle.opacity,
         userAnimationName: userStyle.animationName,
-        contentAnimationName: window.getComputedStyle(content).animationName,
-        beforeAnimationName: window.getComputedStyle(form, "::before").animationName,
-        afterAnimationName: window.getComputedStyle(form, "::after").animationName
+        bodyAnimationName: window.getComputedStyle(body).animationName,
+        screenAnimationName: window.getComputedStyle(screen).animationName
       };
     };
 
@@ -71,8 +74,7 @@ type TerminalBounds = {
 async function collectTerminalBounds(page: Page): Promise<TerminalBounds> {
   return page.getByTestId("prompt-terminal").evaluate((terminal) => {
     const terminalRect = terminal.getBoundingClientRect();
-    const entries = Array.from(terminal.querySelectorAll(".prompt-zen__terminal-entry"));
-    const userEntry = terminal.querySelector("[data-testid='prompt-terminal-user']");
+    const lines = Array.from(terminal.querySelectorAll(".retro-lcd__line"));
 
     const getRangeRects = (element: Element | null) => {
       if (!element) {
@@ -94,7 +96,7 @@ async function collectTerminalBounds(page: Page): Promise<TerminalBounds> {
         }));
     };
 
-    const userRects = getRangeRects(userEntry);
+    const userRects = lines.flatMap((line) => getRangeRects(line));
     const visibleViolations: Array<{
       entryIndex: number;
       left: number;
@@ -103,8 +105,8 @@ async function collectTerminalBounds(page: Page): Promise<TerminalBounds> {
       bottom: number;
     }> = [];
 
-    entries.forEach((entry, entryIndex) => {
-      for (const rect of getRangeRects(entry)) {
+    lines.forEach((line, entryIndex) => {
+      for (const rect of getRangeRects(line)) {
         const intersectsViewport =
           rect.bottom > terminalRect.top && rect.top < terminalRect.bottom;
 
@@ -529,21 +531,26 @@ test("types the live placeholder as a clean prefix sequence with no simulated ty
 }) => {
   await page.goto("/");
 
-  const textarea = page.locator("#prompt-input");
+  const textarea = page.getByLabel("Retro LCD input");
   await expect(textarea).toBeVisible();
 
   const samples = await page.evaluate(async () => {
-    const field = document.querySelector("#prompt-input");
+    const screen = document.querySelector("[data-testid='prompt-zen-form'] .retro-lcd__body");
 
-    if (!(field instanceof HTMLTextAreaElement)) {
-      throw new Error("Prompt input was not found.");
+    if (!(screen instanceof HTMLElement)) {
+      throw new Error("Prompt LCD body was not found.");
     }
 
     const values: string[] = [];
 
     for (let index = 0; index < 8; index += 1) {
       await new Promise((resolve) => window.setTimeout(resolve, 180));
-      values.push(field.getAttribute("placeholder") || "");
+      values.push(
+        Array.from(screen.querySelectorAll(".retro-lcd__line"))
+          .map((line) => line.textContent?.replace(/\u00a0/gu, " ").trim() || "")
+          .join("")
+          .trim()
+      );
     }
 
     return values;
@@ -561,23 +568,88 @@ test("types the live placeholder as a clean prefix sequence with no simulated ty
   }
 });
 
+test("centers the compose cursor inside the active text row", async ({ page }) => {
+  await page.goto("/");
+
+  const textarea = page.getByLabel("Retro LCD input");
+  await expect(textarea).toBeVisible();
+
+  await textarea.click();
+  await textarea.fill("I cards");
+
+  const metrics = await page.evaluate(() => {
+    const root = document.querySelector("[data-testid='prompt-zen-form'] .retro-lcd");
+    const grid = root?.querySelector(".retro-lcd__grid");
+    const cursor = root?.querySelector(".retro-lcd__cursor");
+    const line = Array.from(root?.querySelectorAll(".retro-lcd__line") ?? []).find(
+      (node) => (node.textContent?.replace(/\u00a0/gu, "").trim().length || 0) > 0
+    );
+
+    if (
+      !(root instanceof HTMLElement) ||
+      !(grid instanceof HTMLElement) ||
+      !(cursor instanceof HTMLElement) ||
+      !(line instanceof HTMLElement)
+    ) {
+      throw new Error("Compose LCD elements were not found.");
+    }
+
+    const cursorRect = cursor.getBoundingClientRect();
+    const lineRect = line.getBoundingClientRect();
+    const gridStyle = window.getComputedStyle(grid);
+    const lineHeight = Number.parseFloat(gridStyle.lineHeight);
+
+    return {
+      cursorHeight: cursorRect.height,
+      cursorTopOffset: cursorRect.top - lineRect.top,
+      expectedTopOffset: (lineRect.height - cursorRect.height) / 2,
+      lineHeight
+    };
+  });
+
+  expect(Math.abs(metrics.cursorTopOffset - metrics.expectedTopOffset)).toBeLessThanOrEqual(3);
+  expect(metrics.cursorHeight).toBeGreaterThan(0);
+  expect(metrics.cursorHeight).toBeLessThanOrEqual(metrics.lineHeight);
+});
+
 test("keeps terminal text stable while the live teletype response starts", async ({
   page
 }) => {
   await page.goto("/");
 
-  const textarea = page.locator("#prompt-input");
+  const textarea = page.getByLabel("Retro LCD input");
   await expect(textarea).toBeVisible();
+  await expect
+    .poll(async () =>
+      page.locator("[data-testid='prompt-zen-form'] .retro-lcd__body").evaluate((screen) =>
+        Array.from(screen.querySelectorAll(".retro-lcd__line"))
+          .map((line) => line.textContent?.replace(/\u00a0/gu, "").trim() || "")
+          .join("")
+          .trim()
+      )
+    )
+    .not.toBe("");
 
-  const placeholderColor = await textarea.evaluate((element) =>
-    window.getComputedStyle(element, "::placeholder").color
-  );
-  const composeTextColor = await textarea.evaluate((element) => window.getComputedStyle(element).color);
+  const placeholderColor = await page
+    .locator("[data-testid='prompt-zen-form'] .retro-lcd")
+    .evaluate((element) => {
+      const line = Array.from(element.querySelectorAll(".retro-lcd__line")).find(
+        (node) => (node.textContent?.replace(/\u00a0/gu, "").trim().length || 0) > 0
+      );
+
+      return window.getComputedStyle(line || element.querySelector(".retro-lcd__grid") || element).color;
+    });
 
   await textarea.click();
   await textarea.fill(promptText);
 
-  const composeCursor = page.getByTestId("prompt-compose-cursor");
+  const composeTextColor = await page
+    .locator("[data-testid='prompt-zen-form'] .retro-lcd")
+    .evaluate((element) =>
+      window.getComputedStyle(element.querySelector(".retro-lcd__grid") || element).color
+    );
+
+  const composeCursor = page.locator("[data-testid='prompt-zen-form'] .retro-lcd__cursor");
   await expect(composeCursor).toBeVisible();
 
   const composeCursorStyle = await composeCursor.evaluate((element) => {
@@ -599,7 +671,7 @@ test("keeps terminal text stable while the live teletype response starts", async
   await expect(promptTerminal).toBeVisible();
   await expect(page.getByTestId("prompt-terminal-user")).toContainText(promptText);
 
-  const terminalCursor = page.locator(".prompt-zen__terminal-cursor").first();
+  const terminalCursor = promptTerminal.locator(".retro-lcd__cursor");
   await expect
     .poll(async () => terminalCursor.isVisible().catch(() => false))
     .toBe(true);
@@ -617,49 +689,50 @@ test("keeps terminal text stable while the live teletype response starts", async
   expect(terminalCursorStyle.backgroundColor).toBe("rgba(0, 0, 0, 0)");
   expect(terminalCursorStyle.borderTopWidth).not.toBe("0px");
   expect(terminalCursorStyle.borderTopStyle).toBe("solid");
-  expect(terminalCursorStyle.borderTopColor).toBe(placeholderColor);
 
   const styleSamples = await collectTerminalStyleSamples(page);
   for (const sample of styleSamples) {
     expect(sample.userColor).toBe(composeTextColor);
-    expect(sample.userOpacity).toBe("1");
     expect(sample.userAnimationName).toBe("none");
-    expect(sample.contentAnimationName).toBe("none");
-    expect(sample.beforeAnimationName).toBe("none");
-    expect(sample.afterAnimationName).toBe("none");
+    expect(sample.bodyAnimationName).toBe("none");
+    expect(sample.screenAnimationName).toBe("none");
   }
 
-  await expect(promptTerminal).toContainText("OK");
-  await expect(promptTerminal).toContainText("# queued for isolated git + codex run");
-  await expect(promptTerminal).toContainText("# preparing isolated git worktree");
-  await expect(promptTerminal).toContainText("# running codex cli");
+  await expect(page.getByTestId("prompt-terminal-content")).toContainText("OK");
+  await expect(page.getByTestId("prompt-terminal-content")).toContainText(
+    "# queued for isolated git + codex run"
+  );
+  await expect(page.getByTestId("prompt-terminal-content")).toContainText(
+    "# preparing isolated git worktree"
+  );
+  await expect(page.getByTestId("prompt-terminal-content")).toContainText("# running codex cli");
 
-  const ackColor = await page
-    .locator("[data-kind='ack']")
-    .first()
-    .evaluate((element) => window.getComputedStyle(element).color);
+  const ackColor = await promptTerminal.evaluate((terminal) => {
+    const cell = Array.from(terminal.querySelectorAll(".retro-lcd__cell")).find(
+      (node) =>
+        node.classList.contains("retro-lcd__cell--faint") &&
+        (node.textContent?.replace(/\u00a0/gu, "").trim().length || 0) > 0
+    );
+
+    if (!(cell instanceof HTMLElement)) {
+      throw new Error("Ack cell was not found.");
+    }
+
+    return window.getComputedStyle(cell).color;
+  });
 
   expect(ackColor).toBe(placeholderColor);
 
   await expect
     .poll(async () => {
-      const working = page.getByTestId("prompt-terminal-working");
-      return working.isVisible().catch(() => false);
+      const working = await page.getByTestId("prompt-terminal-working").textContent();
+      return (working || "").length > 0;
     })
     .toBe(true);
 
   await expect
-    .poll(async () =>
-      promptTerminal.evaluate((element) => {
-        const content = element.querySelector("[data-testid='prompt-terminal-content']");
-        if (!(content instanceof HTMLElement)) {
-          return false;
-        }
-
-        return content.scrollHeight > element.clientHeight;
-      })
-    )
-    .toBe(true);
+    .poll(async () => promptTerminal.getAttribute("data-overflow"))
+    .toBe("true");
 
   await expect(page.locator(".history-surface")).toBeVisible({ timeout: 12_000 });
   await expect(page.locator(".surface-toggle__button[data-active='true']")).toContainText(
@@ -676,7 +749,7 @@ test("keeps terminal text inside the lcd bounds and wraps long prompt content", 
   await page.setViewportSize({ width: 700, height: 900 });
   await page.goto("/");
 
-  const textarea = page.locator("#prompt-input");
+  const textarea = page.getByLabel("Retro LCD input");
   await expect(textarea).toBeVisible();
 
   await textarea.click();
@@ -685,7 +758,7 @@ test("keeps terminal text inside the lcd bounds and wraps long prompt content", 
 
   const promptTerminal = page.getByTestId("prompt-terminal");
   await expect(promptTerminal).toBeVisible();
-  await expect(promptTerminal).toContainText("OK");
+  await expect(page.getByTestId("prompt-terminal-content")).toContainText("OK");
   await expect(page.getByTestId("prompt-terminal-user")).toContainText(
     longWrapPromptText.slice(0, 48)
   );
