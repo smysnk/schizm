@@ -14,6 +14,7 @@
 ## Fragments
 
 - [[fragments/emergency-broadcast-system-test]]
+- [[fragments/hello-world]]
 - [[fragments/iconoclast-highlander]]
 - [[fragments/it-hurts-when-ip]]
 - [[fragments/roses-are-red-violets-are-blue]]
@@ -29,6 +30,8 @@ The follow-on concept is a conversational interface that does not just store ide
 The repository also now includes a dedicated dream journal for capturing short symbolic fragments before they disappear.
 
 It also includes a short poetic fragment captured as written.
+
+It also includes a short fragment preserving the phrase "hello world."
 
 It now also includes a short fragment about repeatedly noticing the same clock time.
 

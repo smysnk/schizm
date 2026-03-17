@@ -707,3 +707,88 @@
 }
 ```
 <!-- PROMPT-AUDIT-END:99c04395-32b9-4fc0-89dc-b45d5d6350f4 -->
+<!-- PROMPT-AUDIT-START:89dc22cc-4453-44f3-93d4-2285b636d2a7 -->
+## Prompt Round
+
+- Date: 2026-03-17T04:15:23Z
+- Prompt ID: 89dc22cc-4453-44f3-93d4-2285b636d2a7
+- Input Prompt: hello world.
+
+### Files Added
+- `fragments/hello-world.md`: Captured the submitted text as a standalone fragment because no existing note covered it closely enough to justify integration.
+
+### Files Modified
+- `index.md`: Added the new fragment to the repository overview so it remains discoverable from the root note.
+- `main.canvas`: Added a file node and connection for the new fragment so the canonical map stays aligned with the markdown corpus.
+- `audit.md`: Appended this run's required audit section.
+
+### Files Deleted
+- None.
+
+### Files Moved or Renamed
+- None.
+
+### Canvas Updates
+- `main.canvas`: Added a node for `fragments/hello-world.md`, linked it from the index node, and spaced the lower fragment stack to keep the layout readable.
+
+### Contextual Relevance
+- None.
+
+### Hypotheses
+- Created: None.
+- Updated: None.
+- Strengthened: None.
+- Weakened: None.
+- Disproved: None.
+- Resolved: None.
+
+### Git
+- Branch: codex/mindmap
+- Commit: pending-at-audit-write-time
+
+### Rationale
+- `fragments/hello-world.md`: Preserved the submitted phrase as written without adding interpretation.
+- `index.md`: Kept the new fragment reachable from the repository overview.
+- `main.canvas`: Reflected the added fragment in the canonical concept map.
+- `audit.md`: Recorded the run in the append-only audit log required by the contract.
+
+```json
+{
+  "promptId": "89dc22cc-4453-44f3-93d4-2285b636d2a7",
+  "recordedAt": "2026-03-17T04:15:23Z",
+  "branch": "codex/mindmap",
+  "sha": null,
+  "decision": {
+    "mode": "create"
+  },
+  "added": [
+    "fragments/hello-world.md"
+  ],
+  "modified": [
+    "index.md",
+    "main.canvas",
+    "audit.md"
+  ],
+  "deleted": [],
+  "moved": [],
+  "canvas": [
+    "main.canvas"
+  ],
+  "contextualRelevance": [],
+  "hypotheses": {
+    "created": [],
+    "updated": [],
+    "strengthened": [],
+    "weakened": [],
+    "disproved": [],
+    "resolved": []
+  },
+  "rationales": {
+    "fragments/hello-world.md": "Stored the submitted text as a standalone fragment without adding interpretation.",
+    "index.md": "Updated the root note so the new fragment is discoverable from the repository overview.",
+    "main.canvas": "Extended the canonical canvas with the new fragment node so the graph stays synchronized with the markdown corpus.",
+    "audit.md": "Recorded the maintenance round in the append-only audit log."
+  }
+}
+```
+<!-- PROMPT-AUDIT-END:89dc22cc-4453-44f3-93d4-2285b636d2a7 -->
