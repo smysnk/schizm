@@ -6,6 +6,13 @@
 
 ![Schizm demo](docs/demo/schizm-demo.webp)
 
+Demo assets:
+- [Main demo video](docs/demo/schizm-demo.mp4)
+- [Placeholder demo](docs/demo/schizm-placeholder-demo.webp)
+- [Placeholder demo video](docs/demo/schizm-placeholder-demo.mp4)
+- [Repo flow demo](docs/demo/schizm-repo-flow-demo.webp)
+- [Repo flow demo video](docs/demo/schizm-repo-flow-demo.mp4)
+
 In practical terms, Schizm is a prompt-driven knowledge operations workspace. It combines a Next.js frontend, a GraphQL API, Postgres-backed prompt state, and a Codex CLI runner to maintain `./obsidian-repository` as a living Obsidian-style mind map. The coding agent is allowed to modify only the document store; the surrounding application handles queueing, isolation, audit synchronization, and Git automation.
 
 For a concrete example of the document store after a run, see the [`example/1` demo branch](https://github.com/smysnk/schizsm/tree/example/1).

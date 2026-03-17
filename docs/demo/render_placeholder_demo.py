@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 import json
-import shutil
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from urllib.request import urlopen
 
 from PIL import Image, ImageDraw, ImageFont
 from fontTools.ttLib import TTFont
+from render_support import cleanup, encode_mp4, encode_webp, write_sequence
 
 ROOT = Path(__file__).resolve().parent
 RAW_DIR = ROOT / "raw"
 OUTPUT_PATH = ROOT / "schizm-placeholder-demo.webp"
+VIDEO_OUTPUT_PATH = ROOT / "schizm-placeholder-demo.mp4"
 SEQUENCE_DIR = ROOT / ".placeholder-sequence"
 FONT_DIR = ROOT / ".font-cache"
 PROMPT_FONT_PATH = FONT_DIR / "IBMPlexMono-Regular.ttf"
@@ -291,51 +291,18 @@ def build_sequence() -> list[Image.Image]:
     return frames
 
 
-def write_sequence(frames: list[Image.Image]) -> None:
-    if SEQUENCE_DIR.exists():
-        shutil.rmtree(SEQUENCE_DIR)
-
-    SEQUENCE_DIR.mkdir(parents=True)
-
-    for index, frame in enumerate(frames):
-        frame.convert("RGB").save(SEQUENCE_DIR / f"frame-{index:03d}.png")
-
-
-def encode_webp() -> None:
-    frame_paths = [str(path) for path in sorted(SEQUENCE_DIR.glob("frame-*.png"))]
-    if not frame_paths:
-        raise FileNotFoundError(f"No rendered sequence frames found in {SEQUENCE_DIR}")
-
-    subprocess.run(
-        [
-            "img2webp",
-            "-loop",
-            "0",
-            "-lossless",
-            "-d",
-            str(FRAME_DELAY_MS),
-            *frame_paths,
-            "-o",
-            str(OUTPUT_PATH)
-        ],
-        check=True
-    )
-
-
-def cleanup() -> None:
-    if SEQUENCE_DIR.exists():
-        shutil.rmtree(SEQUENCE_DIR)
-
-
 def main() -> None:
     frames = build_sequence()
-    write_sequence(frames)
+    write_sequence(SEQUENCE_DIR, frames)
     try:
-        encode_webp()
+        encode_webp(SEQUENCE_DIR, OUTPUT_PATH, FRAME_DELAY_MS)
+        encode_mp4(SEQUENCE_DIR, VIDEO_OUTPUT_PATH, FRAME_DELAY_MS)
     finally:
-        cleanup()
+        cleanup(SEQUENCE_DIR)
 
-    print(f"Rendered {OUTPUT_PATH} from {len(frames)} source frames.")
+    print(
+        f"Rendered {OUTPUT_PATH} and {VIDEO_OUTPUT_PATH} from {len(frames)} source frames."
+    )
 
 
 if __name__ == "__main__":

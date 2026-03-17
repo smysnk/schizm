@@ -25,6 +25,7 @@ def load_module(name: str, filename: str):
 
 render_demo = load_module("render_demo", "render_demo.py")
 render_placeholder_demo = load_module("render_placeholder_demo", "render_placeholder_demo.py")
+render_repo_flow_demo = load_module("render_repo_flow_demo", "render_repo_flow_demo.py")
 
 
 class DemoRendererTests(unittest.TestCase):
@@ -108,6 +109,24 @@ class DemoRendererTests(unittest.TestCase):
             self.assertGreater(frame.size[1], 0)
             self.assertGreater(layout["content_width"], 0)
             self.assertTrue(frames)
+
+    def test_repo_flow_demo_visualizes_multi_prompt_create_merge_delete_flow(self):
+        self.assertGreaterEqual(len(render_repo_flow_demo.ROUNDS), 4)
+
+        all_ops = [operation for round_data in render_repo_flow_demo.ROUNDS for operation in round_data.ops]
+        self.assertTrue(any("create " in operation for operation in all_ops))
+        self.assertTrue(any("merge " in operation for operation in all_ops))
+        self.assertTrue(any("delete " in operation for operation in all_ops))
+        self.assertTrue(any("hypothesis" in round_data.hypothesis_state.lower() for round_data in render_repo_flow_demo.ROUNDS))
+
+        frames = render_repo_flow_demo.build_sequence()
+        self.assertTrue(frames)
+        self.assertEqual(frames[0].size, (render_repo_flow_demo.WIDTH, render_repo_flow_demo.HEIGHT))
+        self.assertGreater(
+            len(frames),
+            len(render_repo_flow_demo.ROUNDS)
+            * (render_repo_flow_demo.PROMPT_HOLD_FRAMES + render_repo_flow_demo.ROUND_SETTLE_FRAMES)
+        )
 
 
 if __name__ == "__main__":

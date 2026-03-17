@@ -200,7 +200,8 @@ const buildInstruction = ({
   automationBranch,
   promptBranch,
   remoteName,
-  documentStoreIsRepoRoot
+  documentStoreIsRepoRoot,
+  documentStoreHasDedicatedGitRepo
 }: {
   prompt: Prompt;
   repoRoot: string;
@@ -212,6 +213,7 @@ const buildInstruction = ({
   promptBranch: string;
   remoteName: string;
   documentStoreIsRepoRoot?: boolean;
+  documentStoreHasDedicatedGitRepo?: boolean;
 }) => `You are processing a queued repository-maintenance prompt for this project.
 
 Repository root: ${repoRoot}
@@ -231,6 +233,11 @@ Before making changes:
   documentStoreIsRepoRoot
     ? `In this environment, the document store repository itself is the writable root. Treat references in program.md to obsidian-repository/ as meaning ${documentStoreRoot}.`
     : `Treat ${documentStoreRoot} as the only writable document store root.`
+}
+- ${
+  documentStoreHasDedicatedGitRepo
+    ? `The document store at ${documentStoreRoot} is its own dedicated Git repository. Perform commit/push operations inside that repository, not the outer controller repository at ${repoRoot}.`
+    : `If you need to commit and push, use the repository rooted at ${repoRoot}.`
 }
 - Treat every path outside ${documentStoreRoot} as read-only unless the human explicitly asked otherwise.
 - Treat ${path.join(repoRoot, "packages")} and ${path.join(repoRoot, "scripts")} as read-only unless absolutely required by the contract.
@@ -786,6 +793,7 @@ export class PromptRunner {
       let promptBranch = env.promptRunnerAutomationBranch;
       let automationBranch = env.promptRunnerAutomationBranch;
       let documentStoreIsRepoRoot = false;
+      let documentStoreHasDedicatedGitRepo = false;
 
       if (env.promptRunnerExecutionMode === "container") {
         containerDocumentRepo = await ensureContainerDocumentRepo({
@@ -806,6 +814,7 @@ export class PromptRunner {
         promptBranch = containerDocumentRepo.branch;
         automationBranch = containerDocumentRepo.branch;
         documentStoreIsRepoRoot = true;
+        documentStoreHasDedicatedGitRepo = true;
 
         Object.assign(runnerMetadata, {
           executionMode: "container",
@@ -840,13 +849,30 @@ export class PromptRunner {
         programPath = path.join(repoRoot, "program.md");
         auditPath = path.join(documentStoreRoot, "audit.md");
         schemaPath = path.join(repoRoot, "schemas", "codex-run-output.schema.json");
-        remoteName = preparedWorktree.remoteName;
-        remoteUrl = await runGit(repoRoot, ["remote", "get-url", remoteName], gitOperations).catch(
-          () => ""
-        );
-        remoteConfigured = preparedWorktree.remoteConfigured;
-        promptBranch = preparedWorktree.promptBranch;
-        automationBranch = preparedWorktree.automationBranch;
+        documentStoreHasDedicatedGitRepo = preparedWorktree.documentStoreSeedMode === "clone";
+
+        if (documentStoreHasDedicatedGitRepo) {
+          remoteName = "origin";
+          remoteUrl = await runGit(
+            documentStoreRoot,
+            ["remote", "get-url", remoteName],
+            gitOperations
+          ).catch(() => preparedWorktree?.documentStoreCloneRepoUrl || "");
+          remoteConfigured = true;
+          promptBranch =
+            preparedWorktree.documentStoreCloneBranch || env.promptRunnerContainerRepoBranch;
+          automationBranch = promptBranch;
+        } else {
+          remoteName = preparedWorktree.remoteName;
+          remoteUrl = await runGit(
+            repoRoot,
+            ["remote", "get-url", remoteName],
+            gitOperations
+          ).catch(() => "");
+          remoteConfigured = preparedWorktree.remoteConfigured;
+          promptBranch = preparedWorktree.promptBranch;
+          automationBranch = preparedWorktree.automationBranch;
+        }
 
         Object.assign(runnerMetadata, {
           executionMode: "worktree",
@@ -912,7 +938,8 @@ export class PromptRunner {
         automationBranch,
         promptBranch,
         remoteName,
-        documentStoreIsRepoRoot
+        documentStoreIsRepoRoot,
+        documentStoreHasDedicatedGitRepo
       });
 
       await transitionTo("deciding", "Prepared Codex instruction payload.", {
@@ -966,6 +993,7 @@ export class PromptRunner {
       }
 
       let containerVerification: JsonObject | null = null;
+      let clonedDocumentStoreVerification: JsonObject | null = null;
 
       if (
         env.promptRunnerExecutionMode === "container" &&
@@ -977,6 +1005,22 @@ export class PromptRunner {
             repoRoot,
             remoteName: containerDocumentRepo.remoteName,
             branch: containerDocumentRepo.branch,
+            expectedCommitSha: finalOutput.git.commitSha
+          })
+        ) as JsonObject;
+      }
+
+      if (
+        env.promptRunnerExecutionMode !== "container" &&
+        terminalStatus === "completed" &&
+        preparedWorktree?.documentStoreSeedMode === "clone" &&
+        preparedWorktree.documentStoreCloneBranch
+      ) {
+        clonedDocumentStoreVerification = toJsonValue(
+          await verifyContainerDocumentRepoPush({
+            repoRoot: documentStoreRoot,
+            remoteName: "origin",
+            branch: preparedWorktree.documentStoreCloneBranch,
             expectedCommitSha: finalOutput.git.commitSha
           })
         ) as JsonObject;
@@ -1072,6 +1116,8 @@ export class PromptRunner {
                 controllerSyncedPaths: preparedWorktree.controllerSyncedPaths,
                 controllerRemovedPaths: preparedWorktree.controllerRemovedPaths,
                 remoteConfigured: preparedWorktree.remoteConfigured,
+                outerAutomationRemoteSync: preparedWorktree.outerAutomationRemoteSync,
+                documentStoreVerification: clonedDocumentStoreVerification,
                 finalized: finalizedWorktree
               }
             : null,
@@ -1120,6 +1166,7 @@ export class PromptRunner {
                 documentStoreCloneRepoUrl: preparedWorktree.documentStoreCloneRepoUrl,
                 documentStoreCloneBranch: preparedWorktree.documentStoreCloneBranch,
                 remoteConfigured: preparedWorktree.remoteConfigured,
+                outerAutomationRemoteSync: preparedWorktree.outerAutomationRemoteSync,
                 preserved: true
               }
             : null,

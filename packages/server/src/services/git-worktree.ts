@@ -31,6 +31,7 @@ export type PreparedPromptWorktree = {
   documentStoreCloneBranch: string | null;
   controllerSyncedPaths: string[];
   controllerRemovedPaths: string[];
+  outerAutomationRemoteSync: boolean;
 };
 
 export type FinalizedPromptWorktree = {
@@ -41,6 +42,7 @@ export type FinalizedPromptWorktree = {
   worktreeRemoved: boolean;
   promptBranchDeleted: boolean;
   remotePromptBranchDeleted: boolean;
+  automationBranchPromoted: boolean;
 };
 
 const execFileAsync = promisify(execFile);
@@ -196,8 +198,20 @@ const listWorktreeFiles = async (worktreePath: string) => {
   return visiblePaths;
 };
 
-const readRefText = async (repoRoot: string, ref: string, relativePath: string) =>
-  runGitText(repoRoot, ["show", `${ref}:${relativePath}`]);
+const readRefBuffer = async (repoRoot: string, ref: string, relativePath: string) => {
+  const { stdout } = await execFileAsync("git", ["show", `${ref}:${relativePath}`], {
+    cwd: repoRoot,
+    env: process.env,
+    maxBuffer: 10 * 1024 * 1024
+  });
+
+  return Buffer.isBuffer(stdout) ? stdout : Buffer.from(stdout);
+};
+
+const readRefText = async (repoRoot: string, ref: string, relativePath: string) => {
+  const buffer = await readRefBuffer(repoRoot, ref, relativePath);
+  return buffer.toString("utf8");
+};
 
 const writeTextFile = async (
   worktreePath: string,
@@ -254,7 +268,7 @@ const syncTrackedEntry = async ({
     return;
   }
 
-  await fs.writeFile(targetPath, await readRefText(repoRoot, ref, entry.path), "utf8");
+  await fs.writeFile(targetPath, await readRefBuffer(repoRoot, ref, entry.path));
   await fs.chmod(targetPath, entry.mode === "100755" ? 0o755 : 0o644);
 };
 
@@ -601,13 +615,19 @@ export const preparePromptWorktree = async ({
   await fs.mkdir(worktreeRoot, { recursive: true });
 
   const baseRef = await resolveBaseRef(repoRoot);
-  const remoteConfigured = await ensureAutomationBranch({
-    repoRoot,
-    automationBranch,
-    remoteName
-  });
+  const normalizedDocumentStoreGitUrl = documentStoreGitUrl?.trim() || "";
+  const normalizedDocumentStoreGitBranch = documentStoreGitBranch?.trim() || "main";
+  const outerAutomationRemoteSync = !normalizedDocumentStoreGitUrl;
+  const remoteConfigured = outerAutomationRemoteSync
+    ? await ensureAutomationBranch({
+        repoRoot,
+        automationBranch,
+        remoteName
+      })
+    : false;
   const worktreePath = path.join(worktreeRoot, promptId);
   const promptBranch = sanitizePromptBranchName(promptId);
+  const worktreeSeedRef = outerAutomationRemoteSync ? automationBranch : baseRef;
 
   if (existsSync(worktreePath)) {
     throw new Error(`Prompt worktree path already exists: ${worktreePath}`);
@@ -617,12 +637,10 @@ export const preparePromptWorktree = async ({
     throw new Error(`Prompt branch already exists: ${promptBranch}`);
   }
 
-  await runGit(repoRoot, ["worktree", "add", "-b", promptBranch, worktreePath, automationBranch]);
+  await runGit(repoRoot, ["worktree", "add", "-b", promptBranch, worktreePath, worktreeSeedRef]);
 
   let documentStoreSeedMode: PreparedPromptWorktree["documentStoreSeedMode"] = "branch";
   let documentStoreSeedPaths: string[] = [];
-  const normalizedDocumentStoreGitUrl = documentStoreGitUrl?.trim() || "";
-  const normalizedDocumentStoreGitBranch = documentStoreGitBranch?.trim() || "main";
   const documentStoreRoot = path.join(worktreePath, documentStoreDir);
 
   if (normalizedDocumentStoreGitUrl) {
@@ -681,7 +699,8 @@ export const preparePromptWorktree = async ({
       ? normalizedDocumentStoreGitBranch
       : null,
     controllerSyncedPaths: controllerSync.syncedPaths,
-    controllerRemovedPaths: controllerSync.removedPaths
+    controllerRemovedPaths: controllerSync.removedPaths,
+    outerAutomationRemoteSync
   };
 };
 
@@ -691,11 +710,26 @@ export const finalizePromptWorktree = async (
   const promptCommitSha = (
     await runGit(prepared.repoRoot, ["rev-parse", prepared.promptBranch])
   ).stdout;
+  let automationCommitSha = "";
+  let automationBranchPromoted = false;
 
-  await runGit(prepared.repoRoot, ["branch", "-f", prepared.automationBranch, promptCommitSha]);
+  if (prepared.outerAutomationRemoteSync) {
+    await runGit(prepared.repoRoot, ["branch", "-f", prepared.automationBranch, promptCommitSha]);
 
-  if (prepared.remoteConfigured) {
-    await runGit(prepared.repoRoot, ["push", prepared.remoteName, prepared.automationBranch]);
+    if (prepared.remoteConfigured) {
+      await runGit(prepared.repoRoot, ["push", prepared.remoteName, prepared.automationBranch]);
+    }
+
+    automationCommitSha = (
+      await runGit(prepared.repoRoot, ["rev-parse", prepared.automationBranch])
+    ).stdout;
+    automationBranchPromoted = true;
+  } else if (await branchExists(prepared.repoRoot, prepared.automationBranch)) {
+    automationCommitSha = (
+      await runGit(prepared.repoRoot, ["rev-parse", prepared.automationBranch])
+    ).stdout;
+  } else {
+    automationCommitSha = promptCommitSha;
   }
 
   await restoreControllerOverlay(prepared);
@@ -724,11 +758,10 @@ export const finalizePromptWorktree = async (
     promptBranch: prepared.promptBranch,
     automationBranch: prepared.automationBranch,
     promptCommitSha,
-    automationCommitSha: (
-      await runGit(prepared.repoRoot, ["rev-parse", prepared.automationBranch])
-    ).stdout,
+    automationCommitSha,
     worktreeRemoved: !existsSync(prepared.worktreePath),
     promptBranchDeleted: !(await branchExists(prepared.repoRoot, prepared.promptBranch)),
-    remotePromptBranchDeleted
+    remotePromptBranchDeleted,
+    automationBranchPromoted
   };
 };

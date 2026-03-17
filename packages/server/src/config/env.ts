@@ -1,9 +1,31 @@
 import path from "node:path";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import dotenv from "dotenv";
 
-dotenv.config({ path: path.resolve(process.cwd(), "../../.env") });
-dotenv.config({ path: path.resolve(process.cwd(), ".env"), override: true });
+const explicitEnvKeys = new Set(Object.keys(process.env));
+
+const applyEnvFile = (filePath: string, overridePreviouslyLoaded: boolean) => {
+  if (!existsSync(filePath)) {
+    return;
+  }
+
+  const parsed = dotenv.parse(readFileSync(filePath, "utf8"));
+
+  for (const [key, value] of Object.entries(parsed)) {
+    if (explicitEnvKeys.has(key)) {
+      continue;
+    }
+
+    if (!overridePreviouslyLoaded && process.env[key] !== undefined) {
+      continue;
+    }
+
+    process.env[key] = value;
+  }
+};
+
+applyEnvFile(path.resolve(process.cwd(), "../../.env"), false);
+applyEnvFile(path.resolve(process.cwd(), ".env"), true);
 
 const parseNumber = (value: string | undefined, fallback: number) => {
   const parsed = Number(value);
