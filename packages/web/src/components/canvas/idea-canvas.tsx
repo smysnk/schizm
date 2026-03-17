@@ -45,6 +45,7 @@ import {
   getNextTypedTerminalEntries,
   getPromptFailureDetails,
   getPromptGitSummary,
+  getPromptRunnerGitContext,
   getPromptTransitions,
   terminalWorkingStatuses,
   type PromptTerminalEntry
@@ -384,6 +385,7 @@ export function IdeaCanvas() {
   const selectedPromptFailure = selectedPrompt ? getPromptFailureDetails(selectedPrompt) : null;
   const selectedPromptRecovery = selectedPrompt ? getPromptRecoveryNote(selectedPrompt) : null;
   const selectedPromptGit = selectedPrompt ? getPromptGitSummary(selectedPrompt) : null;
+  const selectedPromptRunnerGit = selectedPrompt ? getPromptRunnerGitContext(selectedPrompt) : null;
   const latestSelectedTransition = selectedPrompt ? getLatestPromptTransition(selectedPrompt) : null;
   const promptTerminalPrompt = promptTerminalSession
     ? recentPrompts.find((prompt) => prompt.id === promptTerminalSession.promptId) || null
@@ -1028,11 +1030,30 @@ export function IdeaCanvas() {
                           </div>
                         </div>
 
-                        {(selectedPromptGit?.branch || selectedPromptGit?.sha) && (
-                          <p className="prompt-detail__hint">
-                            Git: {selectedPromptGit.branch || "unknown branch"}
-                            {selectedPromptGit.sha ? ` @ ${selectedPromptGit.sha.slice(0, 8)}` : ""}
-                          </p>
+                        {(selectedPromptRunnerGit?.repository ||
+                          selectedPromptRunnerGit?.branch ||
+                          selectedPromptGit?.branch ||
+                          selectedPromptGit?.sha) && (
+                          <div className="prompt-detail__runner">
+                            {selectedPromptRunnerGit?.repository ? (
+                              <p className="prompt-detail__hint">
+                                Working repo: {selectedPromptRunnerGit.repository}
+                              </p>
+                            ) : null}
+                            {selectedPromptRunnerGit?.branch ? (
+                              <p className="prompt-detail__hint">
+                                Working branch: {selectedPromptRunnerGit.branch}
+                              </p>
+                            ) : null}
+                            {(selectedPromptGit?.branch || selectedPromptGit?.sha) && (
+                              <p className="prompt-detail__hint">
+                                Last git result: {selectedPromptGit.branch || "unknown branch"}
+                                {selectedPromptGit.sha
+                                  ? ` @ ${selectedPromptGit.sha.slice(0, 8)}`
+                                  : ""}
+                              </p>
+                            )}
+                          </div>
                         )}
 
                         {promptRunnerState ? (
@@ -1048,6 +1069,30 @@ export function IdeaCanvas() {
                                 Active prompt: #{promptRunnerState.activePromptId.slice(0, 8)}
                               </p>
                             ) : null}
+                          </div>
+                        ) : null}
+
+                        {selectedPromptRunnerGit?.operations.length ? (
+                          <div className="prompt-detail__timeline">
+                            {selectedPromptRunnerGit.operations.map((operation, index) => (
+                              <div
+                                className="prompt-detail__step"
+                                key={`${operation.command}-${operation.at || index}`}
+                              >
+                                <div className="prompt-detail__step-row">
+                                  <span className="stat-card__label">Git operation</span>
+                                  <span className="prompt-item__time">
+                                    {operation.at ? formatPromptTime(operation.at) : "Recorded"}
+                                  </span>
+                                </div>
+                                {operation.repoRoot ? (
+                                  <p className="prompt-detail__hint">
+                                    Repo root: {operation.repoRoot}
+                                  </p>
+                                ) : null}
+                                <p className="prompt-detail__git-command">{operation.command}</p>
+                              </div>
+                            ))}
                           </div>
                         ) : null}
 

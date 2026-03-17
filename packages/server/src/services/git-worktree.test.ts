@@ -306,6 +306,80 @@ test("preparePromptWorktree seeds the document store from the base ref when the 
   }
 });
 
+test("preparePromptWorktree replaces DOCUMENT_STORE_DIR with a fresh clone when a document-store repo is configured", async () => {
+  const rootDirectory = await mkdtemp(path.join(os.tmpdir(), "schizm-git-worktree-clone-"));
+  const repoRoot = path.join(rootDirectory, "repo");
+  const documentStoreSeedRoot = path.join(rootDirectory, "document-store-seed");
+  const documentStoreRemoteRoot = path.join(rootDirectory, "document-store-origin.git");
+  const worktreeRoot = path.join(rootDirectory, "worktrees");
+
+  try {
+    await mkdir(repoRoot, { recursive: true });
+    await runGit(repoRoot, ["init", "-b", "main"]);
+    await runGit(repoRoot, ["config", "user.name", "Schizm Tests"]);
+    await runGit(repoRoot, ["config", "user.email", "schizm-tests@example.com"]);
+
+    await writeFile(path.join(repoRoot, "README.md"), "# Main README\n", "utf8");
+    await mkdir(path.join(repoRoot, "obsidian-repository"), { recursive: true });
+    await writeFile(
+      path.join(repoRoot, "obsidian-repository", "audit.md"),
+      "# Local Audit\n",
+      "utf8"
+    );
+    await runGit(repoRoot, ["add", "README.md", "obsidian-repository/audit.md"]);
+    await runGit(repoRoot, ["commit", "-m", "Initial app repo state"]);
+    await runGit(repoRoot, ["branch", "codex/mindmap"]);
+
+    await mkdir(documentStoreSeedRoot, { recursive: true });
+    await runGit(documentStoreSeedRoot, ["init", "-b", "main"]);
+    await runGit(documentStoreSeedRoot, ["config", "user.name", "Schizm Tests"]);
+    await runGit(documentStoreSeedRoot, ["config", "user.email", "schizm-tests@example.com"]);
+    await writeFile(path.join(documentStoreSeedRoot, "audit.md"), "# Remote Audit\n", "utf8");
+    await writeFile(path.join(documentStoreSeedRoot, "notes.md"), "Fresh clone contents.\n", "utf8");
+    await runGit(documentStoreSeedRoot, ["add", "audit.md", "notes.md"]);
+    await runGit(documentStoreSeedRoot, ["commit", "-m", "Initial document store state"]);
+
+    await runGit(rootDirectory, ["init", "--bare", documentStoreRemoteRoot]);
+    await runGit(documentStoreSeedRoot, ["remote", "add", "origin", documentStoreRemoteRoot]);
+    await runGit(documentStoreSeedRoot, ["push", "-u", "origin", "main"]);
+
+    const prepared = await preparePromptWorktree({
+      repoRoot,
+      worktreeRoot,
+      automationBranch: "codex/mindmap",
+      promptId: "clone-seed-123",
+      remoteName: "origin",
+      documentStoreDir: "obsidian-repository",
+      documentStoreGitUrl: documentStoreRemoteRoot,
+      documentStoreGitBranch: "main"
+    });
+
+    assert.equal(prepared.documentStoreSeedMode, "clone");
+    assert.equal(prepared.documentStoreCloneRepoUrl, documentStoreRemoteRoot);
+    assert.equal(prepared.documentStoreCloneBranch, "main");
+    assert.deepEqual(
+      prepared.documentStoreSeedPaths.sort(),
+      ["obsidian-repository/audit.md", "obsidian-repository/notes.md"]
+    );
+    assert.equal(
+      await readFile(path.join(prepared.worktreePath, "obsidian-repository", "audit.md"), "utf8"),
+      "# Remote Audit\n"
+    );
+    assert.equal(
+      await readFile(path.join(prepared.worktreePath, "obsidian-repository", "notes.md"), "utf8"),
+      "Fresh clone contents.\n"
+    );
+    assert.equal(existsSync(path.join(prepared.worktreePath, "obsidian-repository", ".git")), true);
+
+    const finalized = await finalizePromptWorktree(prepared);
+
+    assert.equal(finalized.worktreeRemoved, true);
+    assert.equal(finalized.promptBranchDeleted, true);
+  } finally {
+    await rm(rootDirectory, { recursive: true, force: true });
+  }
+});
+
 test("preparePromptWorktree skips tracked paths matched by .gitignore during controller sync", async () => {
   const rootDirectory = await mkdtemp(path.join(os.tmpdir(), "schizm-git-worktree-ignore-"));
   const repoRoot = path.join(rootDirectory, "repo");

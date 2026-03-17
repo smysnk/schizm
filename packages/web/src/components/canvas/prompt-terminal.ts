@@ -27,6 +27,19 @@ const readString = (value: unknown) =>
 
 const readRecord = (value: unknown) => (isRecord(value) ? value : null);
 
+type PromptRunnerGitOperation = {
+  at: string | null;
+  repoRoot: string | null;
+  command: string;
+};
+
+export type PromptRunnerGitContext = {
+  repository: string | null;
+  branch: string | null;
+  remoteName: string | null;
+  operations: PromptRunnerGitOperation[];
+};
+
 export const terminalWorkingStatuses = new Set<PromptStatus>([
   "scanning",
   "deciding",
@@ -89,10 +102,54 @@ export const getPromptFailureDetails = (prompt: PromptRecord) => {
 export const getPromptGitSummary = (prompt: PromptRecord) => {
   const audit = readRecord(prompt.audit);
   const auditSync = readRecord(prompt.metadata.auditSync);
+  const runner = readRecord(prompt.metadata.runner);
+  const execution = readRecord(prompt.metadata.execution);
+  const finalOutput = readRecord(execution?.finalOutput);
+  const finalGit = readRecord(finalOutput?.git);
   const branch = readString(audit?.branch) || readString(auditSync?.branch);
-  const sha = readString(audit?.sha) || readString(auditSync?.sha);
+  const sha =
+    readString(audit?.sha) ||
+    readString(auditSync?.sha) ||
+    readString(finalGit?.commitSha);
 
-  return { branch, sha };
+  return { branch: branch || readString(runner?.workingBranch), sha };
+};
+
+export const getPromptRunnerGitContext = (prompt: PromptRecord): PromptRunnerGitContext => {
+  const runner = readRecord(prompt.metadata.runner);
+  const operations = Array.isArray(runner?.gitOperations)
+    ? runner.gitOperations.flatMap((entry) => {
+        const operation = readRecord(entry);
+        const command = readString(operation?.command);
+
+        if (!command) {
+          return [];
+        }
+
+        return [
+          {
+            at: readString(operation?.at),
+            repoRoot: readString(operation?.repoRoot),
+            command
+          }
+        ];
+      })
+    : [];
+
+  return {
+    repository:
+      readString(runner?.workingRepository) ||
+      readString(runner?.remoteUrl) ||
+      readString(runner?.documentStoreGitUrl) ||
+      null,
+    branch:
+      readString(runner?.workingBranch) ||
+      readString(runner?.documentStoreGitBranch) ||
+      readString(runner?.promptBranch) ||
+      null,
+    remoteName: readString(runner?.remoteName),
+    operations
+  };
 };
 
 export const buildPromptTerminalEntries = (prompt: PromptRecord | null): PromptTerminalEntry[] => {
@@ -130,6 +187,35 @@ export const buildPromptTerminalEntries = (prompt: PromptRecord | null): PromptT
 
   if (!prompt) {
     return entries;
+  }
+
+  const runnerGit = getPromptRunnerGitContext(prompt);
+
+  if (runnerGit.repository) {
+    entries.push({
+      id: "git-repository",
+      text: `# repo: ${runnerGit.repository}`,
+      tone: "system",
+      kind: "git"
+    });
+  }
+
+  if (runnerGit.branch) {
+    entries.push({
+      id: "git-branch",
+      text: `# branch: ${runnerGit.branch}`,
+      tone: "system",
+      kind: "git"
+    });
+  }
+
+  for (const [index, operation] of runnerGit.operations.entries()) {
+    entries.push({
+      id: `git-op-${index}`,
+      text: `# git op: ${operation.command}`,
+      tone: "system",
+      kind: "git"
+    });
   }
 
   for (const transition of getPromptTransitions(prompt)) {

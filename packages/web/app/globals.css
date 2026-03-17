@@ -1217,6 +1217,14 @@ a {
   line-height: 1.7;
 }
 
+.prompt-detail__git-command {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--text);
+}
+
 .prompt-detail__actions {
   display: flex;
   gap: 10px;

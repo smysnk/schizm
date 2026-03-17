@@ -84,6 +84,43 @@ test("buildPromptTerminalEntries appends git details for completed prompts", () 
   assert.ok(entries.some((entry) => entry.text === "# run complete"));
 });
 
+test("buildPromptTerminalEntries includes runner git context and operations when present", () => {
+  const prompt = createPromptRecord({
+    status: "scanning",
+    metadata: {
+      runner: {
+        workingRepository: "git@github.com:smysnk/schizm.git",
+        workingBranch: "codex/mindmap",
+        gitOperations: [
+          {
+            at: "2026-03-16T23:37:00.000Z",
+            repoRoot: "/app/obsidian-repository",
+            command: "git fetch origin codex/mindmap"
+          },
+          {
+            at: "2026-03-16T23:37:01.000Z",
+            repoRoot: "/app/obsidian-repository",
+            command: "git checkout -B codex/mindmap origin/codex/mindmap"
+          }
+        ],
+        statusTransitions: [{ status: "scanning", at: "2026-03-16T23:37:02.000Z" }]
+      }
+    }
+  });
+
+  const entries = buildPromptTerminalEntries(prompt);
+
+  assert.ok(entries.some((entry) => entry.text === "# repo: git@github.com:smysnk/schizm.git"));
+  assert.ok(entries.some((entry) => entry.text === "# branch: codex/mindmap"));
+  assert.ok(entries.some((entry) => entry.text === "# git op: git fetch origin codex/mindmap"));
+  assert.ok(
+    entries.some(
+      (entry) =>
+        entry.text === "# git op: git checkout -B codex/mindmap origin/codex/mindmap"
+    )
+  );
+});
+
 test("buildPromptTerminalWorkingEntry shows an active working line only for in-flight statuses", () => {
   const activePrompt = createPromptRecord({ status: "writing" });
   const completedPrompt = createPromptRecord({ status: "completed" });

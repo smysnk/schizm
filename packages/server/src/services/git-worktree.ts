@@ -25,8 +25,10 @@ export type PreparedPromptWorktree = {
   remoteConfigured: boolean;
   baseRef: string;
   documentStoreDir: string;
-  documentStoreSeedMode: "branch" | "legacy" | "base";
+  documentStoreSeedMode: "branch" | "legacy" | "base" | "clone";
   documentStoreSeedPaths: string[];
+  documentStoreCloneRepoUrl: string | null;
+  documentStoreCloneBranch: string | null;
   controllerSyncedPaths: string[];
   controllerRemovedPaths: string[];
 };
@@ -368,6 +370,48 @@ const seedDocumentStoreFromBaseRef = async ({
   return visibleBaseEntries.map((entry) => entry.path);
 };
 
+const cloneDocumentStoreRepo = async ({
+  worktreePath,
+  documentStoreDir,
+  documentStoreGitUrl,
+  documentStoreGitBranch
+}: {
+  worktreePath: string;
+  documentStoreDir: string;
+  documentStoreGitUrl: string;
+  documentStoreGitBranch: string;
+}) => {
+  const documentStoreRoot = path.join(worktreePath, documentStoreDir);
+  await removePathIfPresent(documentStoreRoot);
+  await fs.mkdir(path.dirname(documentStoreRoot), { recursive: true });
+
+  await execFileAsync(
+    "git",
+    [
+      "clone",
+      "--branch",
+      documentStoreGitBranch,
+      "--single-branch",
+      "--no-tags",
+      documentStoreGitUrl,
+      documentStoreRoot
+    ],
+    {
+      cwd: worktreePath,
+      env: process.env,
+      encoding: "utf8",
+      maxBuffer: 10 * 1024 * 1024
+    }
+  );
+
+  const clonedFiles = await runGitText(documentStoreRoot, ["ls-files"], documentStoreRoot);
+  return clonedFiles
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .map((relativePath) => path.posix.join(documentStoreDir.replace(/\\/gu, "/"), relativePath));
+};
+
 const syncControllerPathsFromBaseRef = async ({
   repoRoot,
   worktreePath,
@@ -438,6 +482,52 @@ const syncControllerPathsFromBaseRef = async ({
   };
 };
 
+const syncDirectoryFromRef = async ({
+  repoRoot,
+  worktreePath,
+  ref,
+  directory
+}: {
+  repoRoot: string;
+  worktreePath: string;
+  ref: string;
+  directory: string;
+}) => {
+  const refEntries = (await listRefEntries(repoRoot, ref)).filter((entry) =>
+    isWithinDirectory(entry.path, directory)
+  );
+  const visibleRefEntries: RefEntry[] = [];
+
+  for (const entry of refEntries) {
+    if (!(await isGitIgnored(repoRoot, entry.path))) {
+      visibleRefEntries.push(entry);
+    }
+  }
+
+  const refEntryMap = new Map(visibleRefEntries.map((entry) => [entry.path, entry]));
+  const refPathSet = new Set(visibleRefEntries.map((entry) => entry.path));
+  const currentPaths = (await listWorktreeFiles(worktreePath)).filter((relativePath) =>
+    isWithinDirectory(relativePath, directory)
+  );
+  const allPaths = [...new Set([...currentPaths, ...refPathSet])].sort();
+
+  for (const relativePath of allPaths) {
+    const entry = refEntryMap.get(relativePath);
+
+    if (entry) {
+      await syncTrackedEntry({
+        repoRoot,
+        ref,
+        entry,
+        worktreePath
+      });
+      continue;
+    }
+
+    await removeFileIfPresent(worktreePath, relativePath);
+  }
+};
+
 const restoreControllerOverlay = async (prepared: PreparedPromptWorktree) => {
   await syncControllerPathsFromBaseRef({
     repoRoot: prepared.repoRoot,
@@ -494,7 +584,9 @@ export const preparePromptWorktree = async ({
   automationBranch,
   promptId,
   remoteName,
-  documentStoreDir
+  documentStoreDir,
+  documentStoreGitUrl,
+  documentStoreGitBranch
 }: {
   repoRoot: string;
   worktreeRoot: string;
@@ -502,6 +594,8 @@ export const preparePromptWorktree = async ({
   promptId: string;
   remoteName: string;
   documentStoreDir: string;
+  documentStoreGitUrl?: string | null;
+  documentStoreGitBranch?: string | null;
 }): Promise<PreparedPromptWorktree> => {
   await ensureGitRepository(repoRoot);
   await fs.mkdir(worktreeRoot, { recursive: true });
@@ -527,9 +621,19 @@ export const preparePromptWorktree = async ({
 
   let documentStoreSeedMode: PreparedPromptWorktree["documentStoreSeedMode"] = "branch";
   let documentStoreSeedPaths: string[] = [];
+  const normalizedDocumentStoreGitUrl = documentStoreGitUrl?.trim() || "";
+  const normalizedDocumentStoreGitBranch = documentStoreGitBranch?.trim() || "main";
   const documentStoreRoot = path.join(worktreePath, documentStoreDir);
 
-  if (!existsSync(documentStoreRoot)) {
+  if (normalizedDocumentStoreGitUrl) {
+    documentStoreSeedPaths = await cloneDocumentStoreRepo({
+      worktreePath,
+      documentStoreDir,
+      documentStoreGitUrl: normalizedDocumentStoreGitUrl,
+      documentStoreGitBranch: normalizedDocumentStoreGitBranch
+    });
+    documentStoreSeedMode = "clone";
+  } else if (!existsSync(documentStoreRoot)) {
     documentStoreSeedPaths = await migrateLegacyKnowledgeIntoDocumentStore({
       worktreePath,
       documentStoreDir
@@ -572,6 +676,10 @@ export const preparePromptWorktree = async ({
     documentStoreDir,
     documentStoreSeedMode,
     documentStoreSeedPaths,
+    documentStoreCloneRepoUrl: normalizedDocumentStoreGitUrl || null,
+    documentStoreCloneBranch: normalizedDocumentStoreGitUrl
+      ? normalizedDocumentStoreGitBranch
+      : null,
     controllerSyncedPaths: controllerSync.syncedPaths,
     controllerRemovedPaths: controllerSync.removedPaths
   };
@@ -591,6 +699,17 @@ export const finalizePromptWorktree = async (
   }
 
   await restoreControllerOverlay(prepared);
+
+  if (prepared.documentStoreSeedMode === "clone") {
+    await removePathIfPresent(path.join(prepared.worktreePath, prepared.documentStoreDir));
+    await syncDirectoryFromRef({
+      repoRoot: prepared.repoRoot,
+      worktreePath: prepared.worktreePath,
+      ref: prepared.promptBranch,
+      directory: prepared.documentStoreDir
+    });
+  }
+
   await runGit(prepared.repoRoot, ["worktree", "remove", prepared.worktreePath]);
   await runGit(prepared.repoRoot, ["branch", "-D", prepared.promptBranch]);
 

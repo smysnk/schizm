@@ -103,6 +103,7 @@ type ContainerDocumentRepo = {
   documentStoreRoot: string;
   branch: string;
   remoteName: string;
+  remoteUrl: string;
   remoteConfigured: boolean;
 };
 
@@ -113,6 +114,12 @@ type FailureTelemetry = JsonObject & {
   runnerSessionId: string;
   statusAtFailure: string;
   message: string;
+};
+
+type GitOperationTrace = {
+  at: string;
+  repoRoot: string;
+  command: string;
 };
 
 const PROMPT_RUNNER_LEASE_KEY = 41_042_006;
@@ -266,7 +273,35 @@ const resolveTsxBin = (repoRoot: string) => {
   throw new Error(`Unable to locate tsx at ${repoBin}.`);
 };
 
-const runGit = async (repoRoot: string, args: string[]) => {
+const formatShellArgument = (value: string) =>
+  /^[A-Za-z0-9_./:@%+=,-]+$/u.test(value) ? value : JSON.stringify(value);
+
+const formatGitCommand = (args: string[]) =>
+  ["git", ...args].map((value) => formatShellArgument(value)).join(" ");
+
+const traceGitOperation = (
+  gitOperations: JsonObject[] | undefined,
+  repoRoot: string,
+  args: string[]
+) => {
+  if (!gitOperations) {
+    return;
+  }
+
+  gitOperations.push({
+    at: new Date().toISOString(),
+    repoRoot,
+    command: formatGitCommand(args)
+  } satisfies GitOperationTrace as JsonObject);
+};
+
+const runGit = async (
+  repoRoot: string,
+  args: string[],
+  gitOperations?: JsonObject[]
+) => {
+  traceGitOperation(gitOperations, repoRoot, args);
+
   const { stdout } = await execFileAsync("git", args, {
     cwd: repoRoot,
     env: process.env,
@@ -276,7 +311,11 @@ const runGit = async (repoRoot: string, args: string[]) => {
   return stdout.trim();
 };
 
-const ensureContainerDocumentRepo = async (): Promise<ContainerDocumentRepo> => {
+const ensureContainerDocumentRepo = async ({
+  gitOperations
+}: {
+  gitOperations?: JsonObject[];
+} = {}): Promise<ContainerDocumentRepo> => {
   const repoRoot = path.resolve(env.documentStoreDir);
 
   if (!env.promptRunnerContainerRepoUrl.trim()) {
@@ -288,7 +327,9 @@ const ensureContainerDocumentRepo = async (): Promise<ContainerDocumentRepo> => 
   await ensureGitRepository(repoRoot);
 
   const remoteName = env.promptRunnerRemoteName;
-  const remoteUrl = await runGit(repoRoot, ["remote", "get-url", remoteName]).catch(() => "");
+  const remoteUrl = await runGit(repoRoot, ["remote", "get-url", remoteName], gitOperations).catch(
+    () => ""
+  );
 
   if (!remoteUrl) {
     throw new Error(
@@ -304,16 +345,25 @@ const ensureContainerDocumentRepo = async (): Promise<ContainerDocumentRepo> => 
 
   const branch = env.promptRunnerContainerRepoBranch;
 
-  await runGit(repoRoot, ["fetch", remoteName, branch]);
-  await runGit(repoRoot, ["checkout", "-B", branch, `${remoteName}/${branch}`]);
-  await runGit(repoRoot, ["config", "user.name", env.promptRunnerContainerGitAuthorName]);
-  await runGit(repoRoot, ["config", "user.email", env.promptRunnerContainerGitAuthorEmail]);
+  await runGit(repoRoot, ["fetch", remoteName, branch], gitOperations);
+  await runGit(repoRoot, ["checkout", "-B", branch, `${remoteName}/${branch}`], gitOperations);
+  await runGit(
+    repoRoot,
+    ["config", "user.name", env.promptRunnerContainerGitAuthorName],
+    gitOperations
+  );
+  await runGit(
+    repoRoot,
+    ["config", "user.email", env.promptRunnerContainerGitAuthorEmail],
+    gitOperations
+  );
 
   return {
     repoRoot,
     documentStoreRoot: repoRoot,
     branch,
     remoteName,
+    remoteUrl,
     remoteConfigured: true
   };
 };
@@ -642,6 +692,7 @@ export class PromptRunner {
     let preparedWorktree: PreparedPromptWorktree | null = null;
     let containerDocumentRepo: ContainerDocumentRepo | null = null;
     let finalizedWorktree: JsonObject | null = null;
+    const gitOperations: JsonObject[] = [];
 
     const runnerMetadata: JsonObject = {
       runnerSessionId: this.runnerSessionId,
@@ -657,6 +708,7 @@ export class PromptRunner {
       outputPath: artifacts.outputPath,
       auditSyncOutputPath: artifacts.auditSyncOutputPath,
       auditSyncStderrPath: artifacts.auditSyncStderrPath,
+      gitOperations,
       statusTransitions: transitions
     };
 
@@ -729,13 +781,16 @@ export class PromptRunner {
       let auditPath = "";
       let schemaPath = "";
       let remoteName = env.promptRunnerRemoteName;
+      let remoteUrl = "";
       let remoteConfigured = false;
       let promptBranch = env.promptRunnerAutomationBranch;
       let automationBranch = env.promptRunnerAutomationBranch;
       let documentStoreIsRepoRoot = false;
 
       if (env.promptRunnerExecutionMode === "container") {
-        containerDocumentRepo = await ensureContainerDocumentRepo();
+        containerDocumentRepo = await ensureContainerDocumentRepo({
+          gitOperations
+        });
         repoRoot = containerDocumentRepo.repoRoot;
         documentStoreRoot = containerDocumentRepo.documentStoreRoot;
         programPath = path.join(controllerRepoRoot, "program.md");
@@ -746,6 +801,7 @@ export class PromptRunner {
           "codex-run-output.schema.json"
         );
         remoteName = containerDocumentRepo.remoteName;
+        remoteUrl = containerDocumentRepo.remoteUrl;
         remoteConfigured = containerDocumentRepo.remoteConfigured;
         promptBranch = containerDocumentRepo.branch;
         automationBranch = containerDocumentRepo.branch;
@@ -761,6 +817,9 @@ export class PromptRunner {
           auditSyncScriptPath: path.join(controllerRepoRoot, "scripts", "sync-prompt-audit.ts"),
           remoteConfigured,
           remoteName,
+          remoteUrl,
+          workingRepository: containerDocumentRepo.remoteUrl,
+          workingBranch: containerDocumentRepo.branch,
           documentStoreGitUrl: env.promptRunnerContainerRepoUrl,
           documentStoreGitBranch: containerDocumentRepo.branch
         });
@@ -771,7 +830,9 @@ export class PromptRunner {
           automationBranch: env.promptRunnerAutomationBranch,
           promptId: prompt.id,
           remoteName: env.promptRunnerRemoteName,
-          documentStoreDir: env.documentStoreDir
+          documentStoreDir: env.documentStoreDir,
+          documentStoreGitUrl: env.promptRunnerContainerRepoUrl,
+          documentStoreGitBranch: env.promptRunnerContainerRepoBranch
         });
 
         repoRoot = preparedWorktree.worktreePath;
@@ -780,6 +841,9 @@ export class PromptRunner {
         auditPath = path.join(documentStoreRoot, "audit.md");
         schemaPath = path.join(repoRoot, "schemas", "codex-run-output.schema.json");
         remoteName = preparedWorktree.remoteName;
+        remoteUrl = await runGit(repoRoot, ["remote", "get-url", remoteName], gitOperations).catch(
+          () => ""
+        );
         remoteConfigured = preparedWorktree.remoteConfigured;
         promptBranch = preparedWorktree.promptBranch;
         automationBranch = preparedWorktree.automationBranch;
@@ -795,10 +859,19 @@ export class PromptRunner {
           worktreePath: preparedWorktree.worktreePath,
           promptBranch: preparedWorktree.promptBranch,
           remoteConfigured: preparedWorktree.remoteConfigured,
+          remoteUrl,
+          workingRepository:
+            preparedWorktree.documentStoreCloneRepoUrl ||
+            remoteUrl ||
+            preparedWorktree.worktreePath,
+          workingBranch:
+            preparedWorktree.documentStoreCloneBranch || preparedWorktree.promptBranch,
           baseRef: preparedWorktree.baseRef,
           documentStoreDir: preparedWorktree.documentStoreDir,
           documentStoreSeedMode: preparedWorktree.documentStoreSeedMode,
           documentStoreSeedPaths: preparedWorktree.documentStoreSeedPaths,
+          documentStoreCloneRepoUrl: preparedWorktree.documentStoreCloneRepoUrl,
+          documentStoreCloneBranch: preparedWorktree.documentStoreCloneBranch,
           controllerSyncedPaths: preparedWorktree.controllerSyncedPaths,
           controllerRemovedPaths: preparedWorktree.controllerRemovedPaths
         });
@@ -994,6 +1067,8 @@ export class PromptRunner {
                 documentStoreDir: preparedWorktree.documentStoreDir,
                 documentStoreSeedMode: preparedWorktree.documentStoreSeedMode,
                 documentStoreSeedPaths: preparedWorktree.documentStoreSeedPaths,
+                documentStoreCloneRepoUrl: preparedWorktree.documentStoreCloneRepoUrl,
+                documentStoreCloneBranch: preparedWorktree.documentStoreCloneBranch,
                 controllerSyncedPaths: preparedWorktree.controllerSyncedPaths,
                 controllerRemovedPaths: preparedWorktree.controllerRemovedPaths,
                 remoteConfigured: preparedWorktree.remoteConfigured,
@@ -1005,6 +1080,7 @@ export class PromptRunner {
                 path: containerDocumentRepo.repoRoot,
                 branch: containerDocumentRepo.branch,
                 remoteName: containerDocumentRepo.remoteName,
+                remoteUrl: containerDocumentRepo.remoteUrl,
                 remoteConfigured: containerDocumentRepo.remoteConfigured,
                 verification: containerVerification
               }
@@ -1039,6 +1115,10 @@ export class PromptRunner {
                 path: preparedWorktree.worktreePath,
                 promptBranch: preparedWorktree.promptBranch,
                 automationBranch: preparedWorktree.automationBranch,
+                documentStoreDir: preparedWorktree.documentStoreDir,
+                documentStoreSeedMode: preparedWorktree.documentStoreSeedMode,
+                documentStoreCloneRepoUrl: preparedWorktree.documentStoreCloneRepoUrl,
+                documentStoreCloneBranch: preparedWorktree.documentStoreCloneBranch,
                 remoteConfigured: preparedWorktree.remoteConfigured,
                 preserved: true
               }
