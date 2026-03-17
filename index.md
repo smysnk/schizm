@@ -9,6 +9,7 @@
 
 ## Fragments
 
+- [[fragments/iconoclast-highlander]]
 - [[fragments/it-hurts-when-ip]]
 - [[fragments/roses-are-red-violets-are-blue]]
 - [[fragments/repeated-clock-time]]
@@ -28,3 +29,5 @@ It now also includes a short fragment about repeatedly noticing the same clock t
 It also includes a note capturing the frequency illusion as a concept that stood out enough to save.
 
 It now also includes a short fragment captured exactly as submitted about hurting when IP.
+
+It now also includes a short fragment comparing iconoclasm to Highlander.

@@ -461,3 +461,84 @@
 }
 ```
 <!-- PROMPT-AUDIT-END:7abe962c-704a-46a4-8692-b510bb319d37 -->
+<!-- PROMPT-AUDIT-START:0d2ff139-6798-4c12-a39b-6786243d3cc4 -->
+## Prompt Round
+
+- Date: 2026-03-17T00:30:45Z
+- Prompt ID: 0d2ff139-6798-4c12-a39b-6786243d3cc4
+- Input Prompt: Being the iconoclast is like the show Highlander. Where if we can destroy another's idols, we gain more power.
+
+### Files Added
+- `fragments/iconoclast-highlander.md`: Captured the submitted comparison as a standalone fragment because no existing note covered it closely enough to justify a merge.
+
+### Files Modified
+- `index.md`: Added the new fragment to the repository overview so it stays discoverable from the main note.
+- `main.canvas`: Added a file node and connection for the new fragment so the canonical map remains aligned with the markdown corpus.
+- `audit.md`: Appended this run's required audit section.
+
+### Files Deleted
+- None.
+
+### Files Moved or Renamed
+- None.
+
+### Canvas Updates
+- `main.canvas`: Added a node for `fragments/iconoclast-highlander.md` and linked it from the index node.
+
+### Hypotheses
+- Created: None.
+- Updated: None.
+- Strengthened: None.
+- Weakened: None.
+- Disproved: None.
+- Resolved: None.
+
+### Git
+- Branch: codex/mindmap
+- Commit: pending-at-audit-write-time
+
+### Rationale
+- `fragments/iconoclast-highlander.md`: Preserved the submitted metaphor as its own note without extending it into further interpretation.
+- `index.md`: Kept the new fragment reachable from the repository root note.
+- `main.canvas`: Reflected the added fragment in the canonical concept map.
+- `audit.md`: Recorded the run in the append-only audit log required by the contract.
+
+```json
+{
+  "promptId": "0d2ff139-6798-4c12-a39b-6786243d3cc4",
+  "recordedAt": "2026-03-17T00:30:45Z",
+  "branch": "codex/mindmap",
+  "sha": null,
+  "decision": {
+    "mode": "create"
+  },
+  "added": [
+    "fragments/iconoclast-highlander.md"
+  ],
+  "modified": [
+    "index.md",
+    "main.canvas",
+    "audit.md"
+  ],
+  "deleted": [],
+  "moved": [],
+  "canvas": [
+    "main.canvas"
+  ],
+  "hypotheses": {
+    "created": [],
+    "updated": [],
+    "strengthened": [],
+    "weakened": [],
+    "disproved": [],
+    "resolved": []
+  },
+  "rationales": {
+    "fragments/iconoclast-highlander.md": "Stored the submitted comparison as a standalone fragment without adding further interpretation.",
+    "index.md": "Updated the root note so the new fragment is discoverable from the repository overview.",
+    "main.canvas": "Extended the canonical canvas with the new fragment node so the graph stays synchronized with the markdown corpus.",
+    "audit.md": "Recorded the maintenance round in the append-only audit log."
+  }
+}
+```
+<!-- PROMPT-AUDIT-END:0d2ff139-6798-4c12-a39b-6786243d3cc4 -->
