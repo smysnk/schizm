@@ -91,6 +91,24 @@
       "height": 220
     },
     {
+      "id": "this-is-a-test-fragment",
+      "type": "file",
+      "file": "fragments/this-is-a-test.md",
+      "x": 760,
+      "y": 2660,
+      "width": 360,
+      "height": 220
+    },
+    {
+      "id": "this-test-hypothesis",
+      "type": "file",
+      "file": "hypotheses/this-test-may-relate-to-emergency-broadcast-test.md",
+      "x": 1280,
+      "y": 2510,
+      "width": 420,
+      "height": 320
+    },
+    {
       "id": "iconoclast-highlander-fragment",
       "type": "file",
       "file": "fragments/iconoclast-highlander.md",
@@ -152,9 +170,26 @@
       "toNode": "emergency-broadcast-system-fragment"
     },
     {
+      "id": "edge-index-this-is-a-test-fragment",
+      "fromNode": "index",
+      "toNode": "this-is-a-test-fragment"
+    },
+    {
       "id": "edge-inbox-clarifier",
       "fromNode": "inbox",
       "toNode": "clarifier"
+    },
+    {
+      "id": "edge-this-test-hypothesis-emergency",
+      "fromNode": "this-test-hypothesis",
+      "toNode": "emergency-broadcast-system-fragment",
+      "label": "possible link"
+    },
+    {
+      "id": "edge-this-test-hypothesis-fragment",
+      "fromNode": "this-test-hypothesis",
+      "toNode": "this-is-a-test-fragment",
+      "label": "possible link"
     }
   ]
 }

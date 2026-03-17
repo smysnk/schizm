@@ -7,6 +7,10 @@
 - [[concepts/frequency-illusion]]
 - [[journals/dream-journal]]
 
+## Hypotheses
+
+- [[hypotheses/this-test-may-relate-to-emergency-broadcast-test]]
+
 ## Fragments
 
 - [[fragments/emergency-broadcast-system-test]]
@@ -14,6 +18,7 @@
 - [[fragments/it-hurts-when-ip]]
 - [[fragments/roses-are-red-violets-are-blue]]
 - [[fragments/repeated-clock-time]]
+- [[fragments/this-is-a-test]]
 
 ## Current Focus
 
@@ -34,3 +39,7 @@ It now also includes a short fragment captured exactly as submitted about hurtin
 It now also includes a short fragment comparing iconoclasm to Highlander.
 
 It also includes a short fragment preserving a test statement about the emergency broadcast system.
+
+It now also includes a separate short fragment captured exactly as submitted: "this is a test."
+
+It also tracks an open hypothesis that this shorter test fragment may relate to the emergency broadcast system note without treating that link as established.
