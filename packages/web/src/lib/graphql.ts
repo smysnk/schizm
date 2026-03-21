@@ -40,6 +40,46 @@ export type GraphSnapshot = {
   connections: Connection[];
 };
 
+export type CanvasGraphNodeRecord = {
+  id: string;
+  notePath: string | null;
+  canvasNodeId: string | null;
+  label: string;
+  kind: string;
+  category: string;
+  canvasFile: string;
+  x: number | null;
+  y: number | null;
+  width: number | null;
+  height: number | null;
+  degree: number;
+  inboundLinkCount: number;
+  outboundLinkCount: number;
+  tags: string[];
+};
+
+export type CanvasGraphEdgeRecord = {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  kind: string;
+  label: string | null;
+  weight: number;
+  tentative: boolean;
+};
+
+export type CanvasGraphSnapshotRecord = {
+  generatedAt: string;
+  canvasPath: string;
+  nodes: CanvasGraphNodeRecord[];
+  edges: CanvasGraphEdgeRecord[];
+};
+
+export type CanvasGraphQueryResponse = {
+  canvasFiles: string[];
+  canvasGraph: CanvasGraphSnapshotRecord | null;
+};
+
 export type PromptStatus =
   | "queued"
   | "cancelled"
@@ -153,6 +193,42 @@ export const MOVE_IDEA_MUTATION = gql`
       x
       y
       updatedAt
+    }
+  }
+`;
+
+export const CANVAS_GRAPH_QUERY = gql`
+  query CanvasGraph($canvasPath: String) {
+    canvasFiles
+    canvasGraph(canvasPath: $canvasPath) {
+      generatedAt
+      canvasPath
+      nodes {
+        id
+        notePath
+        canvasNodeId
+        label
+        kind
+        category
+        canvasFile
+        x
+        y
+        width
+        height
+        degree
+        inboundLinkCount
+        outboundLinkCount
+        tags
+      }
+      edges {
+        id
+        sourceId
+        targetId
+        kind
+        label
+        weight
+        tentative
+      }
     }
   }
 `;

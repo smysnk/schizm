@@ -8,6 +8,12 @@
     },
     {
       "package": "server",
+      "include": ["packages/server/src/services/canvas-graph.test.ts"],
+      "module": "automation",
+      "theme": "canvas"
+    },
+    {
+      "package": "server",
       "include": ["packages/server/src/services/canvas-validator.test.ts"],
       "module": "automation",
       "theme": "canvas"
@@ -56,12 +62,24 @@
     },
     {
       "package": "web",
+      "include": ["packages/web/src/components/canvas/canvas-graph-layout.test.ts"],
+      "module": "web",
+      "theme": "graph"
+    },
+    {
+      "package": "web",
       "include": ["e2e/**/*.spec.ts"],
       "module": "web",
       "theme": "e2e"
     }
   ],
   "coverageRules": [
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/canvas-graph.ts"],
+      "module": "automation",
+      "theme": "canvas"
+    },
     {
       "package": "server",
       "include": ["packages/server/src/services/canvas-validator.ts"],
@@ -106,6 +124,16 @@
       "include": ["packages/web/src/components/canvas/prompt-terminal.ts"],
       "module": "web",
       "theme": "prompt"
+    },
+    {
+      "package": "web",
+      "include": [
+        "packages/web/src/components/canvas/canvas-graph-layout.ts",
+        "packages/web/src/components/canvas/canvas-force-graph.tsx",
+        "packages/web/src/components/canvas/canvas-graph-types.ts"
+      ],
+      "module": "web",
+      "theme": "graph"
     }
   ],
   "ownership": {
@@ -120,6 +148,7 @@
       { "module": "automation", "theme": "git", "owner": "smysnk" },
       { "module": "demo", "theme": "renderers", "owner": "smysnk" },
       { "module": "web", "theme": "prompt", "owner": "smysnk" },
+      { "module": "web", "theme": "graph", "owner": "smysnk" },
       { "module": "web", "theme": "e2e", "owner": "smysnk" }
     ]
   }

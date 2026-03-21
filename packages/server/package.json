@@ -16,6 +16,7 @@
     "test:battletest-suite": "node --import tsx --test src/services/program-battletest/suite.test.ts",
     "test:battletest-reporting": "node --import tsx --test src/services/program-battletest/reporting.test.ts",
     "test:canvas": "node --import tsx --test src/services/canvas-validator.test.ts",
+    "test:canvas-graph": "node --import tsx --test src/services/canvas-graph.test.ts",
     "test:git-worktree": "node --import tsx --test src/services/git-worktree.test.ts"
   },
   "dependencies": {

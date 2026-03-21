@@ -41,6 +41,41 @@ export const typeDefs = `#graphql
     connections: [Connection!]!
   }
 
+  type CanvasGraphNode {
+    id: ID!
+    notePath: String
+    canvasNodeId: String
+    label: String!
+    kind: String!
+    category: String!
+    canvasFile: String!
+    x: Float
+    y: Float
+    width: Float
+    height: Float
+    degree: Int!
+    inboundLinkCount: Int!
+    outboundLinkCount: Int!
+    tags: [String!]!
+  }
+
+  type CanvasGraphEdge {
+    id: ID!
+    sourceId: ID!
+    targetId: ID!
+    kind: String!
+    label: String
+    weight: Float!
+    tentative: Boolean!
+  }
+
+  type CanvasGraphSnapshot {
+    generatedAt: String!
+    canvasPath: String!
+    nodes: [CanvasGraphNode!]!
+    edges: [CanvasGraphEdge!]!
+  }
+
   enum PromptStatus {
     queued
     cancelled
@@ -123,6 +158,8 @@ export const typeDefs = `#graphql
     health: String!
     runtimeConfig: RuntimeConfig!
     graphSnapshot: GraphSnapshot!
+    canvasFiles: [String!]!
+    canvasGraph(canvasPath: String): CanvasGraphSnapshot
     prompt(id: ID!): Prompt
     prompts(limit: Int): [Prompt!]!
     promptRunnerState: PromptRunnerState!

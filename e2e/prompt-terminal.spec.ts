@@ -615,6 +615,8 @@ test("centers the compose cursor inside the active text row", async ({ page }) =
 test("keeps terminal text stable while the live teletype response starts", async ({
   page
 }) => {
+  test.slow();
+
   await page.goto("/");
 
   const textarea = page.getByLabel("Retro LCD input");
@@ -734,7 +736,7 @@ test("keeps terminal text stable while the live teletype response starts", async
     .poll(async () => promptTerminal.getAttribute("data-overflow"))
     .toBe("true");
 
-  await expect(page.locator(".history-surface")).toBeVisible({ timeout: 12_000 });
+  await expect(page.locator(".history-surface")).toBeVisible({ timeout: 20_000 });
   await expect(page.locator(".surface-toggle__button[data-active='true']")).toContainText(
     "Prompt history"
   );

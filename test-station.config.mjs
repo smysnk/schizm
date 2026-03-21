@@ -37,6 +37,18 @@ export default {
   },
   suites: [
     {
+      id: "server-canvas-graph",
+      label: "Canvas graph",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: ["node", "--import", "tsx", "--test", "packages/server/src/services/canvas-graph.test.ts"],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
       id: "server-canvas-validator",
       label: "Canvas validator",
       adapter: "node-test",
@@ -351,6 +363,24 @@ export default {
         "--test",
         "packages/web/src/components/canvas/prompt-terminal.test.ts",
         "packages/web/src/lib/runtime-config.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "web-canvas-graph-layout-unit",
+      label: "Canvas graph layout unit",
+      adapter: "node-test",
+      package: "web",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/web/src/components/canvas/canvas-graph-layout.test.ts"
       ],
       coverage: {
         enabled: true,

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useSubscription } from "@apollo/client";
 import {
   useEffect,
+  useMemo,
   useRef,
   useState
 } from "react";
@@ -39,6 +40,10 @@ import {
   PROMPT_ZEN_TERMINAL_WORKING_TICK_MS
 } from "./prompt-zen.constants";
 import {
+  getCanvasGraphPromptRefreshToken,
+  getPromptTouchedNotePaths
+} from "./canvas-graph-prompt-context";
+import {
   buildPromptTerminalBuffer,
   buildPromptTerminalEntries,
   buildPromptTerminalWorkingEntry,
@@ -52,6 +57,7 @@ import {
   terminalWorkingStatuses,
   type PromptTerminalEntry
 } from "./prompt-terminal";
+import { CanvasGraphTab } from "./canvas-graph-tab";
 import { ThemeToggle } from "../ui/theme-toggle";
 
 type PromptsResponse = {
@@ -90,7 +96,7 @@ type CreatePromptVariables = {
 };
 
 type PromptHistoryFilter = "all" | "active" | "completed" | "failed" | "cancelled";
-type WorkspaceSurface = "prompt" | "history";
+type WorkspaceSurface = "prompt" | "history" | "graph";
 
 type PromptTerminalSession = {
   promptId: string;
@@ -120,7 +126,8 @@ const promptHistoryFilters: Array<{ id: PromptHistoryFilter; label: string }> = 
 
 const workspaceSurfaces: Array<{ id: WorkspaceSurface; label: string }> = [
   { id: "prompt", label: "Prompt" },
-  { id: "history", label: "Prompt history" }
+  { id: "history", label: "Prompt history" },
+  { id: "graph", label: "Canvas graph" }
 ];
 
 const repoLabel = "smysnk/schizsm";
@@ -443,6 +450,18 @@ export function IdeaCanvas() {
   const promptTerminalBuffer = promptTerminalSession
     ? buildPromptTerminalBuffer(promptTerminalSession.content, promptTerminalEntries)
     : "";
+  const canvasGraphRefreshToken = useMemo(
+    () => getCanvasGraphPromptRefreshToken(recentPrompts),
+    [recentPrompts]
+  );
+  const selectedPromptTouchedNotePaths = useMemo(
+    () => getPromptTouchedNotePaths(selectedPrompt),
+    [selectedPrompt]
+  );
+  const selectedPromptGraphLabel =
+    selectedPromptTouchedNotePaths.length > 0 && selectedPrompt
+      ? `#${selectedPrompt.id.slice(0, 8)}`
+      : null;
   const runnerStatusTone = promptRunnerState?.paused
     ? "workspace__footer-note--warning"
     : promptRunnerState?.inFlight
@@ -873,7 +892,7 @@ export function IdeaCanvas() {
                 )}
               </div>
             </div>
-          ) : (
+          ) : activeSurface === "history" ? (
             <section className="history-surface">
               <div className="history-surface__toolbar">
                 <div className="prompt-filters" role="tablist" aria-label="Prompt history filter">
@@ -1259,6 +1278,12 @@ export function IdeaCanvas() {
                 </div>
               )}
             </section>
+          ) : (
+            <CanvasGraphTab
+              highlightedNotePaths={selectedPromptTouchedNotePaths}
+              highlightedPromptLabel={selectedPromptGraphLabel}
+              refreshToken={canvasGraphRefreshToken}
+            />
           )}
         </section>
 

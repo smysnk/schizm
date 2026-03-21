@@ -1,4 +1,4 @@
-import { getRuntimeConfig } from "../config/env";
+import { env, getRuntimeConfig, resolveDocumentStoreRoot } from "../config/env";
 import { ensureDemoGraph, getGraphSnapshot, moveIdea } from "../repositories/graph-repository";
 import {
   cancelPrompt,
@@ -8,6 +8,7 @@ import {
   retryPrompt
 } from "../repositories/prompt-repository";
 import { listPromptExecutions } from "../repositories/prompt-execution-repository";
+import { getCanvasGraphSnapshot, listCanvasGraphFiles } from "../services/canvas-graph";
 import { getPromptRunner } from "../services/prompt-runner-registry";
 import { subscribePromptWorkspaceEvents } from "../services/prompt-workspace-events";
 import { jsonScalar } from "./json-scalar";
@@ -33,6 +34,24 @@ export const resolvers = {
     health: () => "ok",
     runtimeConfig: () => getRuntimeConfig(),
     graphSnapshot: async () => getGraphSnapshot(),
+    canvasFiles: async () =>
+      listCanvasGraphFiles({
+        documentStoreRoot: resolveDocumentStoreRoot(env.promptRunnerRepoRoot)
+      }),
+    canvasGraph: async (_: unknown, args: { canvasPath?: string | null }) => {
+      try {
+        return await getCanvasGraphSnapshot({
+          documentStoreRoot: resolveDocumentStoreRoot(env.promptRunnerRepoRoot),
+          canvasPath: args.canvasPath
+        });
+      } catch (error) {
+        if (error instanceof Error && /does not exist\.$/u.test(error.message)) {
+          return null;
+        }
+
+        throw error;
+      }
+    },
     prompt: async (_: unknown, args: { id: string }) => getPrompt(args.id),
     prompts: async (_: unknown, args: { limit?: number | null }) => listPrompts(args.limit),
     promptRunnerState: () => getPromptRunnerState()
