@@ -8,6 +8,15 @@
     },
     {
       "package": "server",
+      "include": [
+        "packages/server/src/services/system-canvas.test.ts",
+        "packages/server/src/graphql/system-canvas-query.test.ts"
+      ],
+      "module": "automation",
+      "theme": "system"
+    },
+    {
+      "package": "server",
       "include": ["packages/server/src/services/canvas-graph.test.ts"],
       "module": "automation",
       "theme": "canvas"
@@ -68,12 +77,33 @@
     },
     {
       "package": "web",
+      "include": ["packages/web/src/components/canvas/system-canvas-layout.test.ts"],
+      "module": "web",
+      "theme": "system"
+    },
+    {
+      "package": "web",
+      "include": ["packages/web/src/components/canvas/system-canvas-focus.test.ts"],
+      "module": "web",
+      "theme": "system"
+    },
+    {
+      "package": "web",
       "include": ["e2e/**/*.spec.ts"],
       "module": "web",
       "theme": "e2e"
     }
   ],
   "coverageRules": [
+    {
+      "package": "server",
+      "include": [
+        "packages/server/src/services/system-canvas.ts",
+        "packages/server/src/services/system-canvas.manifest.ts"
+      ],
+      "module": "automation",
+      "theme": "system"
+    },
     {
       "package": "server",
       "include": ["packages/server/src/services/canvas-graph.ts"],
@@ -134,6 +164,17 @@
       ],
       "module": "web",
       "theme": "graph"
+    },
+    {
+      "package": "web",
+      "include": [
+        "packages/web/src/components/canvas/system-canvas-focus.ts",
+        "packages/web/src/components/canvas/system-canvas-layout.ts",
+        "packages/web/src/components/canvas/system-canvas-types.ts",
+        "packages/web/src/components/canvas/system-canvas-tab.tsx"
+      ],
+      "module": "web",
+      "theme": "system"
     }
   ],
   "ownership": {
@@ -146,9 +187,11 @@
       { "module": "automation", "theme": "canvas", "owner": "smysnk" },
       { "module": "automation", "theme": "battletest", "owner": "smysnk" },
       { "module": "automation", "theme": "git", "owner": "smysnk" },
+      { "module": "automation", "theme": "system", "owner": "smysnk" },
       { "module": "demo", "theme": "renderers", "owner": "smysnk" },
       { "module": "web", "theme": "prompt", "owner": "smysnk" },
       { "module": "web", "theme": "graph", "owner": "smysnk" },
+      { "module": "web", "theme": "system", "owner": "smysnk" },
       { "module": "web", "theme": "e2e", "owner": "smysnk" }
     ]
   }

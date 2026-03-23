@@ -1,0 +1,233 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://smysnk.com/schemas/system-canvas.schema.json",
+  "title": "Schizm System Canvas Snapshot",
+  "type": "object",
+  "required": [
+    "generatedAt",
+    "nodes",
+    "edges",
+    "focusNodeIds",
+    "focusEdgeIds",
+    "summary",
+    "selectedPrompt"
+  ],
+  "properties": {
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/node"
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/edge"
+      }
+    },
+    "focusNodeIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "focusEdgeIds": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "summary": {
+      "$ref": "#/$defs/summary"
+    },
+    "selectedPrompt": {
+      "anyOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/selectedPrompt" }
+      ]
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "kind",
+        "lane",
+        "description",
+        "owner",
+        "codeRefs",
+        "defaultX",
+        "defaultY",
+        "tags",
+        "tone",
+        "active",
+        "badge",
+        "metrics"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "label": { "type": "string" },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "human",
+            "surface",
+            "client",
+            "transport",
+            "service",
+            "storage",
+            "worker",
+            "artifact",
+            "external",
+            "infrastructure"
+          ]
+        },
+        "lane": {
+          "type": "string",
+          "enum": [
+            "user",
+            "browser",
+            "transport",
+            "api",
+            "persistence",
+            "worker",
+            "document-store",
+            "infrastructure"
+          ]
+        },
+        "description": { "type": "string" },
+        "owner": { "type": "string" },
+        "codeRefs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "defaultX": { "type": "number" },
+        "defaultY": { "type": "number" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "tone": {
+          "type": "string",
+          "enum": ["idle", "active", "warning", "error"]
+        },
+        "active": { "type": "boolean" },
+        "badge": {
+          "type": ["string", "null"]
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean", "null"]
+          }
+        }
+      }
+    },
+    "edge": {
+      "type": "object",
+      "required": [
+        "id",
+        "sourceId",
+        "targetId",
+        "interaction",
+        "description",
+        "importance",
+        "codeRefs",
+        "active",
+        "badge"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "sourceId": { "type": "string" },
+        "targetId": { "type": "string" },
+        "interaction": {
+          "type": "string",
+          "enum": [
+            "submits",
+            "queries",
+            "mutates",
+            "subscribes",
+            "publishes",
+            "claims",
+            "dispatches",
+            "tracks",
+            "launches",
+            "bootstraps",
+            "prepares",
+            "executes",
+            "writes",
+            "rearranges",
+            "commits",
+            "pushes",
+            "syncs",
+            "persists",
+            "renders"
+          ]
+        },
+        "description": { "type": "string" },
+        "importance": {
+          "type": "string",
+          "enum": ["primary", "secondary"]
+        },
+        "codeRefs": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "active": { "type": "boolean" },
+        "badge": {
+          "type": ["string", "null"]
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "totalNodes",
+        "totalEdges",
+        "queuedPromptCount",
+        "activePromptCount",
+        "failedPromptCount",
+        "completedPromptCount",
+        "activeExecutionCount"
+      ],
+      "properties": {
+        "totalNodes": { "type": "integer" },
+        "totalEdges": { "type": "integer" },
+        "queuedPromptCount": { "type": "integer" },
+        "activePromptCount": { "type": "integer" },
+        "failedPromptCount": { "type": "integer" },
+        "completedPromptCount": { "type": "integer" },
+        "activeExecutionCount": { "type": "integer" }
+      }
+    },
+    "selectedPrompt": {
+      "type": "object",
+      "required": [
+        "id",
+        "status",
+        "executionStatus",
+        "branch",
+        "sha",
+        "failureStage"
+      ],
+      "properties": {
+        "id": { "type": "string" },
+        "status": { "type": "string" },
+        "executionStatus": {
+          "type": ["string", "null"]
+        },
+        "branch": {
+          "type": ["string", "null"]
+        },
+        "sha": {
+          "type": ["string", "null"]
+        },
+        "failureStage": {
+          "type": ["string", "null"]
+        }
+      }
+    }
+  }
+}

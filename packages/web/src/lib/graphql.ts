@@ -80,6 +80,87 @@ export type CanvasGraphQueryResponse = {
   canvasGraph: CanvasGraphSnapshotRecord | null;
 };
 
+export type SystemCanvasNodeRecord = {
+  id: string;
+  label: string;
+  kind: string;
+  lane: string;
+  description: string;
+  owner: string;
+  codeRefs: string[];
+  defaultX: number;
+  defaultY: number;
+  tags: string[];
+  tone: string;
+  active: boolean;
+  badge: string | null;
+  metrics: Record<string, unknown>;
+};
+
+export type SystemCanvasEdgeRecord = {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  interaction: string;
+  description: string;
+  importance: string;
+  codeRefs: string[];
+  active: boolean;
+  badge: string | null;
+};
+
+export type SystemCanvasSummaryRecord = {
+  totalNodes: number;
+  totalEdges: number;
+  queuedPromptCount: number;
+  activePromptCount: number;
+  failedPromptCount: number;
+  completedPromptCount: number;
+  activeExecutionCount: number;
+};
+
+export type SystemCanvasSelectedPromptRecord = {
+  id: string;
+  status: PromptStatus;
+  executionStatus: string | null;
+  currentStageNodeId: string | null;
+  branch: string | null;
+  sha: string | null;
+  failureStage: string | null;
+  routeNodeIds: string[];
+  routeEdgeIds: string[];
+  workerAttempt: number | null;
+  jobName: string | null;
+  podName: string | null;
+  workerNode: string | null;
+  latestGitOperation: string | null;
+  latestGitOperationAt: string | null;
+  latestGitOperationRepoRoot: string | null;
+  queueWaitMs: number | null;
+  processingMs: number | null;
+  totalRuntimeMs: number | null;
+  gitOperationsMs: number | null;
+  agentWorkMs: number | null;
+  canvasRearrangeMs: number | null;
+  gitCommitMs: number | null;
+  gitPushMs: number | null;
+  auditSyncMs: number | null;
+};
+
+export type SystemCanvasSnapshotRecord = {
+  generatedAt: string;
+  nodes: SystemCanvasNodeRecord[];
+  edges: SystemCanvasEdgeRecord[];
+  focusNodeIds: string[];
+  focusEdgeIds: string[];
+  summary: SystemCanvasSummaryRecord;
+  selectedPrompt: SystemCanvasSelectedPromptRecord | null;
+};
+
+export type SystemCanvasQueryResponse = {
+  systemCanvas: SystemCanvasSnapshotRecord;
+};
+
 export type PromptStatus =
   | "queued"
   | "cancelled"
@@ -228,6 +309,79 @@ export const CANVAS_GRAPH_QUERY = gql`
         label
         weight
         tentative
+      }
+    }
+  }
+`;
+
+export const SYSTEM_CANVAS_QUERY = gql`
+  query SystemCanvas($selectedPromptId: ID) {
+    systemCanvas(selectedPromptId: $selectedPromptId) {
+      generatedAt
+      focusNodeIds
+      focusEdgeIds
+      summary {
+        totalNodes
+        totalEdges
+        queuedPromptCount
+        activePromptCount
+        failedPromptCount
+        completedPromptCount
+        activeExecutionCount
+      }
+      selectedPrompt {
+        id
+        status
+        executionStatus
+        currentStageNodeId
+        branch
+        sha
+        failureStage
+        routeNodeIds
+        routeEdgeIds
+        workerAttempt
+        jobName
+        podName
+        workerNode
+        latestGitOperation
+        latestGitOperationAt
+        latestGitOperationRepoRoot
+        queueWaitMs
+        processingMs
+        totalRuntimeMs
+        gitOperationsMs
+        agentWorkMs
+        canvasRearrangeMs
+        gitCommitMs
+        gitPushMs
+        auditSyncMs
+      }
+      nodes {
+        id
+        label
+        kind
+        lane
+        description
+        owner
+        codeRefs
+        defaultX
+        defaultY
+        tags
+        tone
+        active
+        badge
+        metrics
+      }
+      edges {
+        id
+        sourceId
+        targetId
+        interaction
+        description
+        importance
+        codeRefs
+        active
+        badge
       }
     }
   }

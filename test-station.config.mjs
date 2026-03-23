@@ -37,6 +37,25 @@ export default {
   },
   suites: [
     {
+      id: "server-system-canvas",
+      label: "System canvas",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/server/src/services/system-canvas.test.ts",
+        "packages/server/src/graphql/system-canvas-query.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
       id: "server-canvas-graph",
       label: "Canvas graph",
       adapter: "node-test",
@@ -381,6 +400,42 @@ export default {
         "tsx",
         "--test",
         "packages/web/src/components/canvas/canvas-graph-layout.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "web-system-canvas-layout-unit",
+      label: "System canvas layout unit",
+      adapter: "node-test",
+      package: "web",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/web/src/components/canvas/system-canvas-layout.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "web-system-canvas-focus-unit",
+      label: "System canvas focus unit",
+      adapter: "node-test",
+      package: "web",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/web/src/components/canvas/system-canvas-focus.test.ts"
       ],
       coverage: {
         enabled: true,

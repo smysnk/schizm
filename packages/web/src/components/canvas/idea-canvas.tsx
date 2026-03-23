@@ -58,6 +58,7 @@ import {
   type PromptTerminalEntry
 } from "./prompt-terminal";
 import { CanvasGraphTab } from "./canvas-graph-tab";
+import { SystemCanvasTab } from "./system-canvas-tab";
 import { ThemeToggle } from "../ui/theme-toggle";
 
 type PromptsResponse = {
@@ -96,7 +97,7 @@ type CreatePromptVariables = {
 };
 
 type PromptHistoryFilter = "all" | "active" | "completed" | "failed" | "cancelled";
-type WorkspaceSurface = "prompt" | "history" | "graph";
+type WorkspaceSurface = "prompt" | "history" | "graph" | "system";
 
 type PromptTerminalSession = {
   promptId: string;
@@ -127,7 +128,8 @@ const promptHistoryFilters: Array<{ id: PromptHistoryFilter; label: string }> = 
 const workspaceSurfaces: Array<{ id: WorkspaceSurface; label: string }> = [
   { id: "prompt", label: "Prompt" },
   { id: "history", label: "Prompt history" },
-  { id: "graph", label: "Canvas graph" }
+  { id: "graph", label: "Canvas graph" },
+  { id: "system", label: "System" }
 ];
 
 const repoLabel = "smysnk/schizsm";
@@ -1278,12 +1280,14 @@ export function IdeaCanvas() {
                 </div>
               )}
             </section>
-          ) : (
+          ) : activeSurface === "graph" ? (
             <CanvasGraphTab
               highlightedNotePaths={selectedPromptTouchedNotePaths}
               highlightedPromptLabel={selectedPromptGraphLabel}
               refreshToken={canvasGraphRefreshToken}
             />
+          ) : (
+            <SystemCanvasTab selectedPromptId={selectedPrompt?.id || null} />
           )}
         </section>
 

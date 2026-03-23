@@ -255,7 +255,7 @@ export const claimNextQueuedPrompt = async (): Promise<Prompt | null> =>
           SELECT id
           FROM prompts
           WHERE status = 'queued'
-          ORDER BY created_at ASC
+          ORDER BY created_at ASC, id ASC
           FOR UPDATE SKIP LOCKED
           LIMIT 1
         )

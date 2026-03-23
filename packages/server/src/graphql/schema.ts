@@ -76,6 +76,83 @@ export const typeDefs = `#graphql
     edges: [CanvasGraphEdge!]!
   }
 
+  type SystemCanvasNode {
+    id: ID!
+    label: String!
+    kind: String!
+    lane: String!
+    description: String!
+    owner: String!
+    codeRefs: [String!]!
+    defaultX: Float!
+    defaultY: Float!
+    tags: [String!]!
+    tone: String!
+    active: Boolean!
+    badge: String
+    metrics: JSON!
+  }
+
+  type SystemCanvasEdge {
+    id: ID!
+    sourceId: ID!
+    targetId: ID!
+    interaction: String!
+    description: String!
+    importance: String!
+    codeRefs: [String!]!
+    active: Boolean!
+    badge: String
+  }
+
+  type SystemCanvasSummary {
+    totalNodes: Int!
+    totalEdges: Int!
+    queuedPromptCount: Int!
+    activePromptCount: Int!
+    failedPromptCount: Int!
+    completedPromptCount: Int!
+    activeExecutionCount: Int!
+  }
+
+  type SystemCanvasSelectedPrompt {
+    id: ID!
+    status: PromptStatus!
+    executionStatus: String
+    currentStageNodeId: ID
+    branch: String
+    sha: String
+    failureStage: String
+    routeNodeIds: [ID!]!
+    routeEdgeIds: [ID!]!
+    workerAttempt: Int
+    jobName: String
+    podName: String
+    workerNode: String
+    latestGitOperation: String
+    latestGitOperationAt: String
+    latestGitOperationRepoRoot: String
+    queueWaitMs: Int
+    processingMs: Int
+    totalRuntimeMs: Int
+    gitOperationsMs: Int
+    agentWorkMs: Int
+    canvasRearrangeMs: Int
+    gitCommitMs: Int
+    gitPushMs: Int
+    auditSyncMs: Int
+  }
+
+  type SystemCanvasSnapshot {
+    generatedAt: String!
+    nodes: [SystemCanvasNode!]!
+    edges: [SystemCanvasEdge!]!
+    focusNodeIds: [ID!]!
+    focusEdgeIds: [ID!]!
+    summary: SystemCanvasSummary!
+    selectedPrompt: SystemCanvasSelectedPrompt
+  }
+
   enum PromptStatus {
     queued
     cancelled
@@ -160,6 +237,7 @@ export const typeDefs = `#graphql
     graphSnapshot: GraphSnapshot!
     canvasFiles: [String!]!
     canvasGraph(canvasPath: String): CanvasGraphSnapshot
+    systemCanvas(selectedPromptId: ID): SystemCanvasSnapshot!
     prompt(id: ID!): Prompt
     prompts(limit: Int): [Prompt!]!
     promptRunnerState: PromptRunnerState!
