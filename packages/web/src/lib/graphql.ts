@@ -78,6 +78,36 @@ export type CanvasGraphSnapshotRecord = {
 export type CanvasGraphQueryResponse = {
   canvasFiles: string[];
   canvasGraph: CanvasGraphSnapshotRecord | null;
+  canvasLanes: CanvasLanesSnapshotRecord | null;
+};
+
+export type CanvasLaneCardRecord = {
+  nodeId: string;
+  label: string;
+  kind: string;
+  category: string;
+  notePath: string | null;
+  canvasNodeId: string | null;
+  canvasFile: string;
+  reason: string;
+  score: number;
+  tentative: boolean;
+  touchedByPrompt: boolean;
+};
+
+export type CanvasLaneRecord = {
+  id: string;
+  label: string;
+  description: string;
+  cards: CanvasLaneCardRecord[];
+};
+
+export type CanvasLanesSnapshotRecord = {
+  generatedAt: string;
+  canvasPath: string;
+  focusNodeId: string;
+  focusHistory: string[];
+  lanes: CanvasLaneRecord[];
 };
 
 export type SystemCanvasNodeRecord = {
@@ -279,7 +309,12 @@ export const MOVE_IDEA_MUTATION = gql`
 `;
 
 export const CANVAS_GRAPH_QUERY = gql`
-  query CanvasGraph($canvasPath: String) {
+  query CanvasGraph(
+    $canvasPath: String
+    $laneFocusNodeId: ID
+    $laneFocusHistory: [ID!]
+    $highlightedNotePaths: [String!]
+  ) {
     canvasFiles
     canvasGraph(canvasPath: $canvasPath) {
       generatedAt
@@ -309,6 +344,35 @@ export const CANVAS_GRAPH_QUERY = gql`
         label
         weight
         tentative
+      }
+    }
+    canvasLanes(
+      canvasPath: $canvasPath
+      focusNodeId: $laneFocusNodeId
+      focusHistory: $laneFocusHistory
+      highlightedNotePaths: $highlightedNotePaths
+    ) {
+      generatedAt
+      canvasPath
+      focusNodeId
+      focusHistory
+      lanes {
+        id
+        label
+        description
+        cards {
+          nodeId
+          label
+          kind
+          category
+          notePath
+          canvasNodeId
+          canvasFile
+          reason
+          score
+          tentative
+          touchedByPrompt
+        }
       }
     }
   }

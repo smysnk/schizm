@@ -9,6 +9,7 @@ import {
 } from "../repositories/prompt-repository";
 import { listPromptExecutions } from "../repositories/prompt-execution-repository";
 import { getCanvasGraphSnapshot, listCanvasGraphFiles } from "../services/canvas-graph";
+import { getCanvasLanesSnapshot } from "../services/canvas-lanes";
 import { getPromptRunner } from "../services/prompt-runner-registry";
 import { buildSystemCanvasSnapshot } from "../services/system-canvas";
 import { subscribePromptWorkspaceEvents } from "../services/prompt-workspace-events";
@@ -35,6 +36,7 @@ type ResolverDependencies = {
   ensureDemoGraph: typeof ensureDemoGraph;
   listCanvasGraphFiles: typeof listCanvasGraphFiles;
   getCanvasGraphSnapshot: typeof getCanvasGraphSnapshot;
+  getCanvasLanesSnapshot: typeof getCanvasLanesSnapshot;
   getPrompt: typeof getPrompt;
   listPrompts: typeof listPrompts;
   createPrompt: typeof createPrompt;
@@ -54,6 +56,7 @@ const defaultDependencies: ResolverDependencies = {
   ensureDemoGraph,
   listCanvasGraphFiles,
   getCanvasGraphSnapshot,
+  getCanvasLanesSnapshot,
   getPrompt,
   listPrompts,
   createPrompt,
@@ -144,6 +147,31 @@ export const createResolvers = (overrides: Partial<ResolverDependencies> = {}) =
           return await dependencies.getCanvasGraphSnapshot({
             documentStoreRoot: resolveDocumentStoreRoot(env.promptRunnerRepoRoot),
             canvasPath: args.canvasPath
+          });
+        } catch (error) {
+          if (error instanceof Error && /does not exist\.$/u.test(error.message)) {
+            return null;
+          }
+
+          throw error;
+        }
+      },
+      canvasLanes: async (
+        _: unknown,
+        args: {
+          canvasPath?: string | null;
+          focusNodeId?: string | null;
+          focusHistory?: string[] | null;
+          highlightedNotePaths?: string[] | null;
+        }
+      ) => {
+        try {
+          return await dependencies.getCanvasLanesSnapshot({
+            documentStoreRoot: resolveDocumentStoreRoot(env.promptRunnerRepoRoot),
+            canvasPath: args.canvasPath,
+            focusNodeId: args.focusNodeId,
+            focusHistory: args.focusHistory || [],
+            highlightedNotePaths: args.highlightedNotePaths || []
           });
         } catch (error) {
           if (error instanceof Error && /does not exist\.$/u.test(error.message)) {

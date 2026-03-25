@@ -56,6 +56,61 @@ export default {
       }
     },
     {
+      id: "server-canvas-lanes",
+      label: "Canvas lanes",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/server/src/services/canvas-lanes.test.ts",
+        "packages/server/src/graphql/canvas-lanes-query.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "web-canvas-lanes-navigation",
+      label: "Canvas lanes navigation",
+      adapter: "node-test",
+      package: "web",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/web/src/components/canvas/canvas-lanes-navigation.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "web-canvas-lanes",
+      label: "Canvas lanes UI",
+      adapter: "node-test",
+      package: "web",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/web/src/components/canvas/canvas-lanes-tab.test.tsx"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
       id: "server-canvas-graph",
       label: "Canvas graph",
       adapter: "node-test",

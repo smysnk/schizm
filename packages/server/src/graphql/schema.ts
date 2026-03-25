@@ -76,6 +76,35 @@ export const typeDefs = `#graphql
     edges: [CanvasGraphEdge!]!
   }
 
+  type CanvasLaneCard {
+    nodeId: ID!
+    label: String!
+    kind: String!
+    category: String!
+    notePath: String
+    canvasNodeId: String
+    canvasFile: String!
+    reason: String!
+    score: Float!
+    tentative: Boolean!
+    touchedByPrompt: Boolean!
+  }
+
+  type CanvasLane {
+    id: String!
+    label: String!
+    description: String!
+    cards: [CanvasLaneCard!]!
+  }
+
+  type CanvasLanesSnapshot {
+    generatedAt: String!
+    canvasPath: String!
+    focusNodeId: ID!
+    focusHistory: [ID!]!
+    lanes: [CanvasLane!]!
+  }
+
   type SystemCanvasNode {
     id: ID!
     label: String!
@@ -237,6 +266,12 @@ export const typeDefs = `#graphql
     graphSnapshot: GraphSnapshot!
     canvasFiles: [String!]!
     canvasGraph(canvasPath: String): CanvasGraphSnapshot
+    canvasLanes(
+      canvasPath: String
+      focusNodeId: ID
+      focusHistory: [ID!]
+      highlightedNotePaths: [String!]
+    ): CanvasLanesSnapshot
     systemCanvas(selectedPromptId: ID): SystemCanvasSnapshot!
     prompt(id: ID!): Prompt
     prompts(limit: Int): [Prompt!]!

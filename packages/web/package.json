@@ -6,7 +6,7 @@
     "dev": "next dev -p ${WEB_PORT:-3000}",
     "build": "next build",
     "start": "next start -p ${WEB_PORT:-3000}",
-    "test:unit": "node --import tsx --test src/components/canvas/prompt-terminal.test.ts src/components/canvas/canvas-graph-layout.test.ts src/components/canvas/canvas-graph-prompt-context.test.ts src/components/canvas/system-canvas-layout.test.ts src/components/canvas/system-canvas-focus.test.ts src/lib/runtime-config.test.ts"
+    "test:unit": "node --import tsx --test src/components/canvas/prompt-terminal.test.ts src/components/canvas/canvas-graph-layout.test.ts src/components/canvas/canvas-graph-prompt-context.test.ts src/components/canvas/canvas-lanes-navigation.test.ts src/components/canvas/canvas-lanes-presentation.test.ts src/components/canvas/canvas-lanes-tab.test.tsx src/components/canvas/system-canvas-layout.test.ts src/components/canvas/system-canvas-focus.test.ts src/lib/runtime-config.test.ts"
   },
   "dependencies": {
     "@apollo/client": "^3.12.6",
