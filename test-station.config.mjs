@@ -75,6 +75,25 @@ export default {
       }
     },
     {
+      id: "server-canvas-tree",
+      label: "Canvas tree",
+      adapter: "node-test",
+      package: "server",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/server/src/services/canvas-tree.test.ts",
+        "packages/server/src/graphql/canvas-tree-query.test.ts"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
       id: "web-canvas-lanes-navigation",
       label: "Canvas lanes navigation",
       adapter: "node-test",
@@ -104,6 +123,27 @@ export default {
         "tsx",
         "--test",
         "packages/web/src/components/canvas/canvas-lanes-tab.test.tsx"
+      ],
+      coverage: {
+        enabled: true,
+        mode: "same-run"
+      }
+    },
+    {
+      id: "web-canvas-tree",
+      label: "Canvas tree UI",
+      adapter: "node-test",
+      package: "web",
+      cwd: rootDir,
+      command: [
+        "node",
+        "--import",
+        "tsx",
+        "--test",
+        "packages/web/src/components/canvas/canvas-tree-layout.test.ts",
+        "packages/web/src/components/canvas/canvas-tree-presentation.test.ts",
+        "packages/web/src/components/canvas/canvas-tree-playback.test.ts",
+        "packages/web/src/components/canvas/canvas-tree-tab.test.tsx"
       ],
       coverage: {
         enabled: true,

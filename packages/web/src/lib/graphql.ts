@@ -75,12 +75,6 @@ export type CanvasGraphSnapshotRecord = {
   edges: CanvasGraphEdgeRecord[];
 };
 
-export type CanvasGraphQueryResponse = {
-  canvasFiles: string[];
-  canvasGraph: CanvasGraphSnapshotRecord | null;
-  canvasLanes: CanvasLanesSnapshotRecord | null;
-};
-
 export type CanvasLaneCardRecord = {
   nodeId: string;
   label: string;
@@ -108,6 +102,89 @@ export type CanvasLanesSnapshotRecord = {
   focusNodeId: string;
   focusHistory: string[];
   lanes: CanvasLaneRecord[];
+};
+
+export type CanvasTreeRootOptionRecord = {
+  id: string;
+  label: string;
+  kind: string;
+  category: string;
+  notePath: string | null;
+  canvasFile: string;
+};
+
+export type CanvasTreeNodeRecord = {
+  id: string;
+  parentId: string | null;
+  depth: number;
+  label: string;
+  notePath: string | null;
+  kind: string;
+  category: string;
+  canvasFile: string;
+  relationshipFamily: string;
+  relationshipReason: string;
+  lineage: string[];
+  childIds: string[];
+  descendantCount: number;
+  degree: number;
+  touchedByPrompt: boolean;
+  tentative: boolean;
+  score: number;
+  xHint: number | null;
+  yHint: number | null;
+  virtual: boolean;
+  defaultCollapsed: boolean;
+};
+
+export type CanvasTreeLinkRecord = {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  depth: number;
+  relationshipFamily: string;
+  relationshipReason: string;
+  tentative: boolean;
+  weight: number;
+};
+
+export type CanvasTreeSummaryRecord = {
+  availableRootCount: number;
+  visibleLeafCount: number;
+  visibleBranchCount: number;
+  hiddenByDepthCount: number;
+  relationshipFamilyCounts: {
+    canvas: number;
+    tentativeCanvas?: number;
+    "tentative-canvas"?: number;
+    document: number;
+    context: number;
+    bridge: number;
+  };
+};
+
+export type CanvasTreeSnapshotRecord = {
+  contractVersion: number;
+  generatedAt: string;
+  canvasPath: string;
+  rootNodeId: string;
+  rootLabel: string;
+  maxDepthRequested: number;
+  maxDepthResolved: number;
+  nodeCount: number;
+  linkCount: number;
+  truncated: boolean;
+  availableRoots: CanvasTreeRootOptionRecord[];
+  nodes: CanvasTreeNodeRecord[];
+  links: CanvasTreeLinkRecord[];
+  summary: CanvasTreeSummaryRecord;
+};
+
+export type CanvasGraphQueryResponse = {
+  canvasFiles: string[];
+  canvasGraph: CanvasGraphSnapshotRecord | null;
+  canvasLanes: CanvasLanesSnapshotRecord | null;
+  canvasTree: CanvasTreeSnapshotRecord | null;
 };
 
 export type SystemCanvasNodeRecord = {
@@ -313,6 +390,8 @@ export const CANVAS_GRAPH_QUERY = gql`
     $canvasPath: String
     $laneFocusNodeId: ID
     $laneFocusHistory: [ID!]
+    $treeRootNodeId: ID
+    $treeMaxDepth: Int
     $highlightedNotePaths: [String!]
   ) {
     canvasFiles
@@ -372,6 +451,77 @@ export const CANVAS_GRAPH_QUERY = gql`
           score
           tentative
           touchedByPrompt
+        }
+      }
+    }
+    canvasTree(
+      canvasPath: $canvasPath
+      rootNodeId: $treeRootNodeId
+      maxDepth: $treeMaxDepth
+      highlightedNotePaths: $highlightedNotePaths
+    ) {
+      contractVersion
+      generatedAt
+      canvasPath
+      rootNodeId
+      rootLabel
+      maxDepthRequested
+      maxDepthResolved
+      nodeCount
+      linkCount
+      truncated
+      availableRoots {
+        id
+        label
+        kind
+        category
+        notePath
+        canvasFile
+      }
+      nodes {
+        id
+        parentId
+        depth
+        label
+        notePath
+        kind
+        category
+        canvasFile
+        relationshipFamily
+        relationshipReason
+        lineage
+        childIds
+        descendantCount
+        degree
+        touchedByPrompt
+        tentative
+        score
+        xHint
+        yHint
+        virtual
+        defaultCollapsed
+      }
+      links {
+        id
+        sourceId
+        targetId
+        depth
+        relationshipFamily
+        relationshipReason
+        tentative
+        weight
+      }
+      summary {
+        availableRootCount
+        visibleLeafCount
+        visibleBranchCount
+        hiddenByDepthCount
+        relationshipFamilyCounts {
+          canvas
+          tentativeCanvas
+          document
+          context
+          bridge
         }
       }
     }

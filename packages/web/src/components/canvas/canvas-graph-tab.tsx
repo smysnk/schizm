@@ -8,6 +8,7 @@ import {
 } from "../../lib/graphql";
 import { CanvasForceGraph, type CanvasForceGraphHandle } from "./canvas-force-graph";
 import { CanvasLanesTab } from "./canvas-lanes-tab";
+import { CanvasTreeTab } from "./canvas-tree-tab";
 import { getCanvasGraphHighlightedNodeIds } from "./canvas-graph-prompt-context";
 import {
   canvasGraphTuningStorageKey,
@@ -23,8 +24,12 @@ import type {
   CanvasGraphRenderNode
 } from "./canvas-graph-types";
 import type { CanvasLanesSnapshotRecord } from "./canvas-lanes-types";
+import type {
+  CanvasTreeLayoutMode,
+  CanvasTreeSnapshotRecord
+} from "./canvas-tree-types";
 
-type CanvasGraphMode = "graph" | "lanes";
+type CanvasGraphMode = "graph" | "lanes" | "tree";
 type CanvasLanesStateRecord = Record<
   string,
   {
@@ -32,9 +37,43 @@ type CanvasLanesStateRecord = Record<
     focusHistory: string[];
   }
 >;
+type CanvasTreeStateEntry = {
+  rootNodeId: string | null;
+  maxDepth: number;
+  rootHistory: string[];
+  layoutMode: CanvasTreeLayoutMode;
+  playbackEnabled: boolean;
+};
+type CanvasTreeStateRecord = Record<
+  string,
+  CanvasTreeStateEntry
+>;
 
 const canvasGraphModeStorageKey = "schizm.canvasGraph.mode";
 const canvasLanesStateStorageKey = "schizm.canvasGraph.lanes";
+const canvasTreeStateStorageKey = "schizm.canvasGraph.tree";
+const defaultCanvasTreeDepth = 3;
+
+const normalizeTreeStateEntry = (
+  entry:
+    | {
+        rootNodeId?: string | null;
+        maxDepth?: number;
+        rootHistory?: string[];
+        layoutMode?: string;
+        playbackEnabled?: boolean;
+      }
+    | undefined
+): CanvasTreeStateEntry => ({
+  rootNodeId: entry?.rootNodeId || null,
+  maxDepth:
+    typeof entry?.maxDepth === "number" && Number.isFinite(entry.maxDepth)
+      ? entry.maxDepth
+      : defaultCanvasTreeDepth,
+  rootHistory: Array.isArray(entry?.rootHistory) ? entry.rootHistory : [],
+  layoutMode: entry?.layoutMode === "radial" ? "radial" : "phylogeny",
+  playbackEnabled: Boolean(entry?.playbackEnabled)
+});
 
 const normalizeNodeKind = (kind: string): CanvasGraphNodeKind =>
   kind === "file" || kind === "text" || kind === "group" || kind === "missing"
@@ -132,6 +171,7 @@ export function CanvasGraphTab({
   const [focusSelectedNeighborhood, setFocusSelectedNeighborhood] = useState(false);
   const [selectedCanvasPath, setSelectedCanvasPath] = useState<string | null>(null);
   const [laneStateByCanvas, setLaneStateByCanvas] = useState<CanvasLanesStateRecord>({});
+  const [treeStateByCanvas, setTreeStateByCanvas] = useState<CanvasTreeStateRecord>({});
   const [graphTuning, setGraphTuning] = useState<CanvasGraphTuningSettings>(
     defaultCanvasGraphTuningSettings
   );
@@ -139,6 +179,9 @@ export function CanvasGraphTab({
   const activeLaneState = selectedCanvasPath
     ? laneStateByCanvas[selectedCanvasPath] || { focusNodeId: null, focusHistory: [] }
     : { focusNodeId: null, focusHistory: [] };
+  const activeTreeState = selectedCanvasPath
+    ? normalizeTreeStateEntry(treeStateByCanvas[selectedCanvasPath])
+    : normalizeTreeStateEntry(undefined);
 
   const { data, loading, error, refetch } = useQuery<CanvasGraphQueryResponse>(
     CANVAS_GRAPH_QUERY,
@@ -147,6 +190,8 @@ export function CanvasGraphTab({
         canvasPath: selectedCanvasPath,
         laneFocusNodeId: activeLaneState.focusNodeId,
         laneFocusHistory: activeLaneState.focusHistory,
+        treeRootNodeId: activeTreeState.rootNodeId,
+        treeMaxDepth: activeTreeState.maxDepth,
         highlightedNotePaths
       },
       fetchPolicy: "cache-and-network"
@@ -164,8 +209,9 @@ export function CanvasGraphTab({
       const savedMode = window.localStorage.getItem(canvasGraphModeStorageKey);
       const rawGraphTuning = window.localStorage.getItem(canvasGraphTuningStorageKey);
       const rawLaneState = window.localStorage.getItem(canvasLanesStateStorageKey);
+      const rawTreeState = window.localStorage.getItem(canvasTreeStateStorageKey);
 
-      if (savedMode === "graph" || savedMode === "lanes") {
+      if (savedMode === "graph" || savedMode === "lanes" || savedMode === "tree") {
         setGraphMode(savedMode);
       }
 
@@ -177,9 +223,21 @@ export function CanvasGraphTab({
       if (rawLaneState) {
         setLaneStateByCanvas(JSON.parse(rawLaneState) as CanvasLanesStateRecord);
       }
+
+      if (rawTreeState) {
+        const parsed = JSON.parse(rawTreeState) as Record<string, unknown>;
+        const normalizedEntries: CanvasTreeStateRecord = Object.fromEntries(
+          Object.entries(parsed).map(([canvasPath, entry]) => [
+            canvasPath,
+            normalizeTreeStateEntry(entry as Parameters<typeof normalizeTreeStateEntry>[0])
+          ])
+        );
+        setTreeStateByCanvas(normalizedEntries);
+      }
     } catch {
       setGraphTuning(defaultCanvasGraphTuningSettings);
       setLaneStateByCanvas({});
+      setTreeStateByCanvas({});
     }
   }, []);
 
@@ -192,10 +250,11 @@ export function CanvasGraphTab({
       window.localStorage.setItem(canvasGraphModeStorageKey, graphMode);
       window.localStorage.setItem(canvasGraphTuningStorageKey, JSON.stringify(graphTuning));
       window.localStorage.setItem(canvasLanesStateStorageKey, JSON.stringify(laneStateByCanvas));
+      window.localStorage.setItem(canvasTreeStateStorageKey, JSON.stringify(treeStateByCanvas));
     } catch {
       // Ignore storage failures.
     }
-  }, [graphMode, graphTuning, laneStateByCanvas]);
+  }, [graphMode, graphTuning, laneStateByCanvas, treeStateByCanvas]);
 
   useEffect(() => {
     if (!canvasFiles.length) {
@@ -235,11 +294,15 @@ export function CanvasGraphTab({
       canvasPath: selectedCanvasPath,
       laneFocusNodeId: activeLaneState.focusNodeId,
       laneFocusHistory: activeLaneState.focusHistory,
+      treeRootNodeId: activeTreeState.rootNodeId,
+      treeMaxDepth: activeTreeState.maxDepth,
       highlightedNotePaths
     });
   }, [
     activeLaneState.focusHistory,
     activeLaneState.focusNodeId,
+    activeTreeState.maxDepth,
+    activeTreeState.rootNodeId,
     highlightedNotePaths,
     refetch,
     refreshToken,
@@ -267,6 +330,25 @@ export function CanvasGraphTab({
 
   const lanesSnapshot = useMemo(
     () => (data?.canvasLanes as CanvasLanesSnapshotRecord | null) || null,
+    [data]
+  );
+  const treeSnapshot = useMemo(
+    () =>
+      data?.canvasTree
+        ? ({
+            ...data.canvasTree,
+            availableRoots: data.canvasTree.availableRoots.map((root) => ({
+              ...root,
+              kind: normalizeNodeKind(root.kind),
+              category: normalizeNodeCategory(root.category)
+            })),
+            nodes: data.canvasTree.nodes.map((node) => ({
+              ...node,
+              kind: normalizeNodeKind(node.kind),
+              category: normalizeNodeCategory(node.category)
+            }))
+          } as CanvasTreeSnapshotRecord)
+        : null,
     [data]
   );
 
@@ -331,6 +413,106 @@ export function CanvasGraphTab({
     return (result.data?.canvasLanes as CanvasLanesSnapshotRecord | null) || null;
   };
 
+  const handleRequestTreeSnapshot = async (
+    rootNodeId: string,
+    maxDepth: number,
+    rootHistory: string[]
+  ) => {
+    if (!selectedCanvasPath) {
+      return null;
+    }
+
+    setTreeStateByCanvas((current) => ({
+      ...current,
+      [selectedCanvasPath]: {
+        ...normalizeTreeStateEntry(current[selectedCanvasPath]),
+        rootNodeId,
+        maxDepth,
+        rootHistory
+      }
+    }));
+
+    const result = await refetch({
+      canvasPath: selectedCanvasPath,
+      laneFocusNodeId: activeLaneState.focusNodeId,
+      laneFocusHistory: activeLaneState.focusHistory,
+      treeRootNodeId: rootNodeId,
+      treeMaxDepth: maxDepth,
+      highlightedNotePaths
+    });
+
+    return (result.data?.canvasTree as CanvasTreeSnapshotRecord | null) || null;
+  };
+
+  const updateActiveTreePreferences = (
+    patch: Partial<{
+      layoutMode: CanvasTreeLayoutMode;
+      playbackEnabled: boolean;
+    }>
+  ) => {
+    if (!selectedCanvasPath) {
+      return;
+    }
+
+    setTreeStateByCanvas((current) => ({
+      ...current,
+      [selectedCanvasPath]: {
+        ...normalizeTreeStateEntry(current[selectedCanvasPath]),
+        ...patch
+      }
+    }));
+  };
+
+  useEffect(() => {
+    if (!selectedCanvasPath || !treeSnapshot) {
+      return;
+    }
+
+    setTreeStateByCanvas((current) => {
+      const existing = current[selectedCanvasPath];
+      const normalized = {
+        rootNodeId: treeSnapshot.rootNodeId,
+        maxDepth: treeSnapshot.maxDepthRequested,
+        rootHistory: normalizeTreeStateEntry(existing).rootHistory,
+        layoutMode: normalizeTreeStateEntry(existing).layoutMode,
+        playbackEnabled: normalizeTreeStateEntry(existing).playbackEnabled
+      };
+
+      if (
+        existing &&
+        existing.rootNodeId === normalized.rootNodeId &&
+        existing.maxDepth === normalized.maxDepth &&
+        JSON.stringify(existing.rootHistory) === JSON.stringify(normalized.rootHistory) &&
+        existing.layoutMode === normalized.layoutMode &&
+        existing.playbackEnabled === normalized.playbackEnabled
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [selectedCanvasPath]: normalized
+      };
+    });
+  }, [selectedCanvasPath, treeSnapshot]);
+
+  const activateTreeMode = async () => {
+    setGraphMode("tree");
+
+    const nextRootId =
+      selectedNode?.id || activeLaneState.focusNodeId || activeTreeState.rootNodeId;
+
+    if (!selectedCanvasPath || !nextRootId || nextRootId === activeTreeState.rootNodeId) {
+      return;
+    }
+
+    const nextHistory = activeTreeState.rootNodeId
+      ? [...activeTreeState.rootHistory, activeTreeState.rootNodeId]
+      : activeTreeState.rootHistory;
+
+    await handleRequestTreeSnapshot(nextRootId, activeTreeState.maxDepth, nextHistory);
+  };
+
   const handleCanvasPathChange = (nextCanvasPath: string | null) => {
     setSelectedNode(null);
     setSelectedCanvasPath(nextCanvasPath);
@@ -353,6 +535,16 @@ export function CanvasGraphTab({
         onClick={() => setGraphMode("lanes")}
       >
         Lanes
+      </button>
+      <button
+        type="button"
+        className="prompt-filter"
+        data-active={graphMode === "tree"}
+        onClick={() => {
+          void activateTreeMode();
+        }}
+      >
+        Tree
       </button>
     </div>
   );
@@ -471,15 +663,35 @@ export function CanvasGraphTab({
     </div>
   );
 
+  const treeToolbarLead = (
+    <div className="graph-menubar">
+      {modeSwitch}
+      {canvasSelector}
+    </div>
+  );
+
   let content: React.ReactNode;
 
-  if (loading && ((graphMode === "graph" && !visibleSnapshot) || (graphMode === "lanes" && !lanesSnapshot))) {
+  if (
+    loading &&
+    ((graphMode === "graph" && !visibleSnapshot) ||
+      (graphMode === "lanes" && !lanesSnapshot) ||
+      (graphMode === "tree" && !treeSnapshot))
+  ) {
     content =
       graphMode === "lanes" ? (
         <CanvasLanesTab
           snapshot={null}
           selectedPromptLabel={highlightedPromptLabel}
           toolbarLead={lanesToolbarLead}
+        />
+      ) : graphMode === "tree" ? (
+        <CanvasTreeTab
+          snapshot={null}
+          selectedPromptLabel={highlightedPromptLabel}
+          toolbarLead={treeToolbarLead}
+          layoutMode={activeTreeState.layoutMode}
+          playbackEnabled={activeTreeState.playbackEnabled}
         />
       ) : (
         <section className="graph-surface graph-surface--empty">
@@ -506,6 +718,24 @@ export function CanvasGraphTab({
         selectedPromptLabel={highlightedPromptLabel}
         toolbarLead={lanesToolbarLead}
         onRequestSnapshot={handleRequestLanesSnapshot}
+      />
+    );
+  } else if (graphMode === "tree") {
+    content = (
+      <CanvasTreeTab
+        snapshot={treeSnapshot}
+        selectedPromptLabel={highlightedPromptLabel}
+        toolbarLead={treeToolbarLead}
+        layoutMode={activeTreeState.layoutMode}
+        playbackEnabled={activeTreeState.playbackEnabled}
+        rootHistory={activeTreeState.rootHistory}
+        onRequestSnapshot={handleRequestTreeSnapshot}
+        onChangeLayoutMode={(nextLayoutMode) =>
+          updateActiveTreePreferences({ layoutMode: nextLayoutMode })
+        }
+        onChangePlaybackEnabled={(nextPlaybackEnabled) =>
+          updateActiveTreePreferences({ playbackEnabled: nextPlaybackEnabled })
+        }
       />
     );
   } else if (!visibleSnapshot || visibleSnapshot.nodes.length === 0) {

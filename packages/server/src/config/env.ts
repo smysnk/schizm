@@ -43,6 +43,8 @@ const parseBoolean = (value: string | undefined, fallback: boolean) => {
 const toWebSocketUrl = (value: string) =>
   value.replace(/^http:/i, "ws:").replace(/^https:/i, "wss:");
 
+const availableThemes = ["signal", "paper", "midnight", "workflow-analysis"];
+
 const resolveRepoRoot = () => {
   if (process.env.PROMPT_RUNNER_REPO_ROOT) {
     return path.resolve(process.env.PROMPT_RUNNER_REPO_ROOT);
@@ -77,7 +79,7 @@ export const env = {
     process.env.GRAPH_SUBTITLE ||
     "Map how fragments attract, collide, and reshape each other.",
   defaultTheme: process.env.DEFAULT_THEME || "signal",
-  availableThemes: ["signal", "paper", "midnight"],
+  availableThemes,
   canvasRefreshMs: parseNumber(process.env.CANVAS_REFRESH_MS, 30_000),
   webPort: parseNumber(process.env.WEB_PORT, 3000),
   serverPort: parseNumber(process.env.SERVER_PORT, parseNumber(process.env.PORT, 4000)),

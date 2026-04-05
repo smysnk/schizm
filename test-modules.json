@@ -26,6 +26,15 @@
     },
     {
       "package": "server",
+      "include": [
+        "packages/server/src/services/canvas-tree.test.ts",
+        "packages/server/src/graphql/canvas-tree-query.test.ts"
+      ],
+      "module": "automation",
+      "theme": "canvas"
+    },
+    {
+      "package": "server",
       "include": ["packages/server/src/services/canvas-graph.test.ts"],
       "module": "automation",
       "theme": "canvas"
@@ -92,6 +101,17 @@
     },
     {
       "package": "web",
+      "include": [
+        "packages/web/src/components/canvas/canvas-tree-layout.test.ts",
+        "packages/web/src/components/canvas/canvas-tree-presentation.test.ts",
+        "packages/web/src/components/canvas/canvas-tree-playback.test.ts",
+        "packages/web/src/components/canvas/canvas-tree-tab.test.tsx"
+      ],
+      "module": "web",
+      "theme": "graph"
+    },
+    {
+      "package": "web",
       "include": ["packages/web/src/components/canvas/canvas-graph-layout.test.ts"],
       "module": "web",
       "theme": "graph"
@@ -128,6 +148,12 @@
     {
       "package": "server",
       "include": ["packages/server/src/services/canvas-lanes.ts"],
+      "module": "automation",
+      "theme": "canvas"
+    },
+    {
+      "package": "server",
+      "include": ["packages/server/src/services/canvas-tree.ts"],
       "module": "automation",
       "theme": "canvas"
     },
@@ -188,6 +214,11 @@
         "packages/web/src/components/canvas/canvas-lanes-navigation.ts",
         "packages/web/src/components/canvas/canvas-lanes-tab.tsx",
         "packages/web/src/components/canvas/canvas-lanes-types.ts",
+        "packages/web/src/components/canvas/canvas-tree-layout.ts",
+        "packages/web/src/components/canvas/canvas-tree-playback.ts",
+        "packages/web/src/components/canvas/canvas-tree-presentation.ts",
+        "packages/web/src/components/canvas/canvas-tree-tab.tsx",
+        "packages/web/src/components/canvas/canvas-tree-types.ts",
         "packages/web/src/components/canvas/canvas-graph-layout.ts",
         "packages/web/src/components/canvas/canvas-force-graph.tsx",
         "packages/web/src/components/canvas/canvas-graph-types.ts"

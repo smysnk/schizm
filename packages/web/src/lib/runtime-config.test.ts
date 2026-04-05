@@ -18,7 +18,7 @@ const createConfig = (
   graphTitle: "Connection Field",
   graphSubtitle: "Map how fragments attract, collide, and reshape each other.",
   defaultTheme: "signal",
-  availableThemes: ["signal", "paper", "midnight"],
+  availableThemes: ["signal", "paper", "midnight", "workflow-analysis"],
   canvasRefreshMs: 30_000,
   graphqlEndpoint: "/graphql",
   graphqlWsEndpoint: "",

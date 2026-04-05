@@ -9,6 +9,8 @@ export type PublicRuntimeConfig = {
   graphqlWsEndpoint: string;
 };
 
+const availableThemes = ["signal", "paper", "midnight", "workflow-analysis"];
+
 declare global {
   interface Window {
     __SCHIZM_RUNTIME__?: PublicRuntimeConfig;
@@ -20,7 +22,7 @@ const fallbackConfig: PublicRuntimeConfig = {
   graphTitle: "Connection Field",
   graphSubtitle: "Map how fragments attract, collide, and reshape each other.",
   defaultTheme: "signal",
-  availableThemes: ["signal", "paper", "midnight"],
+  availableThemes,
   canvasRefreshMs: 30_000,
   graphqlEndpoint: "/graphql",
   graphqlWsEndpoint: ""

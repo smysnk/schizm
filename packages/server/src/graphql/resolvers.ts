@@ -10,6 +10,7 @@ import {
 import { listPromptExecutions } from "../repositories/prompt-execution-repository";
 import { getCanvasGraphSnapshot, listCanvasGraphFiles } from "../services/canvas-graph";
 import { getCanvasLanesSnapshot } from "../services/canvas-lanes";
+import { getCanvasTreeSnapshot } from "../services/canvas-tree";
 import { getPromptRunner } from "../services/prompt-runner-registry";
 import { buildSystemCanvasSnapshot } from "../services/system-canvas";
 import { subscribePromptWorkspaceEvents } from "../services/prompt-workspace-events";
@@ -37,6 +38,7 @@ type ResolverDependencies = {
   listCanvasGraphFiles: typeof listCanvasGraphFiles;
   getCanvasGraphSnapshot: typeof getCanvasGraphSnapshot;
   getCanvasLanesSnapshot: typeof getCanvasLanesSnapshot;
+  getCanvasTreeSnapshot: typeof getCanvasTreeSnapshot;
   getPrompt: typeof getPrompt;
   listPrompts: typeof listPrompts;
   createPrompt: typeof createPrompt;
@@ -57,6 +59,7 @@ const defaultDependencies: ResolverDependencies = {
   listCanvasGraphFiles,
   getCanvasGraphSnapshot,
   getCanvasLanesSnapshot,
+  getCanvasTreeSnapshot,
   getPrompt,
   listPrompts,
   createPrompt,
@@ -173,6 +176,45 @@ export const createResolvers = (overrides: Partial<ResolverDependencies> = {}) =
             focusHistory: args.focusHistory || [],
             highlightedNotePaths: args.highlightedNotePaths || []
           });
+        } catch (error) {
+          if (error instanceof Error && /does not exist\.$/u.test(error.message)) {
+            return null;
+          }
+
+          throw error;
+        }
+      },
+      canvasTree: async (
+        _: unknown,
+        args: {
+          canvasPath?: string | null;
+          rootNodeId?: string | null;
+          maxDepth?: number | null;
+          highlightedNotePaths?: string[] | null;
+        }
+      ) => {
+        try {
+          const snapshot = await dependencies.getCanvasTreeSnapshot({
+            documentStoreRoot: resolveDocumentStoreRoot(env.promptRunnerRepoRoot),
+            canvasPath: args.canvasPath,
+            rootNodeId: args.rootNodeId,
+            maxDepth: args.maxDepth,
+            highlightedNotePaths: args.highlightedNotePaths || []
+          });
+
+          return {
+            ...snapshot,
+            summary: {
+              ...snapshot.summary,
+              relationshipFamilyCounts: {
+                canvas: snapshot.summary.relationshipFamilyCounts.canvas,
+                tentativeCanvas: snapshot.summary.relationshipFamilyCounts["tentative-canvas"],
+                document: snapshot.summary.relationshipFamilyCounts.document,
+                context: snapshot.summary.relationshipFamilyCounts.context,
+                bridge: snapshot.summary.relationshipFamilyCounts.bridge
+              }
+            }
+          };
         } catch (error) {
           if (error instanceof Error && /does not exist\.$/u.test(error.message)) {
             return null;

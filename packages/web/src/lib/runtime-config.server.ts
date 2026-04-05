@@ -15,6 +15,7 @@ const toWebSocketUrl = (value: string) =>
 
 const serverOrigin = process.env.SERVER_URL || `http://127.0.0.1:${process.env.SERVER_PORT || "4000"}`;
 const graphqlEndpoint = process.env.GRAPHQL_ENDPOINT || "/graphql";
+const availableThemes = ["signal", "paper", "midnight", "workflow-analysis"];
 
 export const getRuntimeConfig = (): PublicRuntimeConfig => ({
   appTitle: process.env.APP_TITLE || "Schizm",
@@ -23,7 +24,7 @@ export const getRuntimeConfig = (): PublicRuntimeConfig => ({
     process.env.GRAPH_SUBTITLE ||
     "Map how fragments attract, collide, and reshape each other.",
   defaultTheme: process.env.DEFAULT_THEME || "signal",
-  availableThemes: ["signal", "paper", "midnight"],
+  availableThemes,
   canvasRefreshMs: parseNumber(process.env.CANVAS_REFRESH_MS, 30_000),
   graphqlEndpoint,
   graphqlWsEndpoint:

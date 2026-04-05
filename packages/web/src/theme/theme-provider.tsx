@@ -1,12 +1,16 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { isThemeId, themeOptions, type ThemeId } from "./themes";
+import {
+  resolveThemeId,
+  type ThemeId,
+  type ThemeOption
+} from "./themes";
 
 type ThemeContextValue = {
   theme: ThemeId;
   setTheme: (theme: ThemeId) => void;
-  themes: typeof themeOptions;
+  themes: readonly ThemeOption[];
 };
 
 const THEME_STORAGE_KEY = "schizm-theme";
@@ -15,28 +19,42 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export function ThemeProvider({
   children,
-  initialTheme
+  initialTheme,
+  themes
 }: {
   children: ReactNode;
-  initialTheme: string;
+  initialTheme: ThemeId;
+  themes: readonly ThemeOption[];
 }) {
-  const [theme, setTheme] = useState<ThemeId>(
-    isThemeId(initialTheme) ? initialTheme : "signal"
-  );
+  const [theme, setTheme] = useState<ThemeId>(initialTheme);
+  const availableThemeIds = themes.map((themeOption) => themeOption.id);
+  const availableThemesKey = availableThemeIds.join("|");
 
   useEffect(() => {
+    const normalized = resolveThemeId(theme, availableThemeIds);
+
+    if (normalized !== theme) {
+      setTheme(normalized);
+    }
+  }, [theme, availableThemesKey]);
+
+  useEffect(() => {
+    const fallbackTheme = resolveThemeId(initialTheme, availableThemeIds);
+
     try {
       const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
-      if (stored && isThemeId(stored)) {
-        setTheme(stored);
-        return;
-      }
+      const nextTheme = stored
+        ? resolveThemeId(stored, availableThemeIds)
+        : fallbackTheme;
+
+      setTheme(nextTheme);
+      return;
     } catch (_error) {
       // ignore storage failures
     }
 
-    document.documentElement.dataset.theme = theme;
-  }, []);
+    setTheme(fallbackTheme);
+  }, [initialTheme, availableThemesKey]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -48,7 +66,7 @@ export function ThemeProvider({
   }, [theme]);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, themes: themeOptions }}>
+    <ThemeContext.Provider value={{ theme, setTheme, themes }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -34,10 +34,28 @@ export default function RootLayout({
   const hydrationScript = `
     window.__SCHIZM_RUNTIME__ = ${serialized};
     try {
+      const availableThemes = Array.isArray(window.__SCHIZM_RUNTIME__.availableThemes)
+        ? window.__SCHIZM_RUNTIME__.availableThemes
+        : [];
+      const resolveTheme = (value, fallback) => {
+        if (typeof value === "string" && availableThemes.includes(value)) {
+          return value;
+        }
+
+        if (typeof fallback === "string" && availableThemes.includes(fallback)) {
+          return fallback;
+        }
+
+        return availableThemes[0] || "signal";
+      };
       const savedTheme = window.localStorage.getItem("schizm-theme");
-      document.documentElement.dataset.theme = savedTheme || window.__SCHIZM_RUNTIME__.defaultTheme;
+      document.documentElement.dataset.theme = resolveTheme(
+        savedTheme,
+        window.__SCHIZM_RUNTIME__.defaultTheme
+      );
     } catch (_error) {
-      document.documentElement.dataset.theme = window.__SCHIZM_RUNTIME__.defaultTheme;
+      document.documentElement.dataset.theme =
+        window.__SCHIZM_RUNTIME__.defaultTheme || "signal";
     }
   `;
 

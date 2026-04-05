@@ -105,6 +105,83 @@ export const typeDefs = `#graphql
     lanes: [CanvasLane!]!
   }
 
+  type CanvasTreeRootOption {
+    id: ID!
+    label: String!
+    kind: String!
+    category: String!
+    notePath: String
+    canvasFile: String!
+  }
+
+  type CanvasTreeNode {
+    id: ID!
+    parentId: ID
+    depth: Int!
+    label: String!
+    notePath: String
+    kind: String!
+    category: String!
+    canvasFile: String!
+    relationshipFamily: String!
+    relationshipReason: String!
+    lineage: [ID!]!
+    childIds: [ID!]!
+    descendantCount: Int!
+    degree: Int!
+    touchedByPrompt: Boolean!
+    tentative: Boolean!
+    score: Float!
+    xHint: Float
+    yHint: Float
+    virtual: Boolean!
+    defaultCollapsed: Boolean!
+  }
+
+  type CanvasTreeLink {
+    id: ID!
+    sourceId: ID!
+    targetId: ID!
+    depth: Int!
+    relationshipFamily: String!
+    relationshipReason: String!
+    tentative: Boolean!
+    weight: Float!
+  }
+
+  type CanvasTreeRelationshipFamilyCounts {
+    canvas: Int!
+    tentativeCanvas: Int!
+    document: Int!
+    context: Int!
+    bridge: Int!
+  }
+
+  type CanvasTreeSummary {
+    availableRootCount: Int!
+    visibleLeafCount: Int!
+    visibleBranchCount: Int!
+    hiddenByDepthCount: Int!
+    relationshipFamilyCounts: CanvasTreeRelationshipFamilyCounts!
+  }
+
+  type CanvasTreeSnapshot {
+    contractVersion: Int!
+    generatedAt: String!
+    canvasPath: String!
+    rootNodeId: ID!
+    rootLabel: String!
+    maxDepthRequested: Int!
+    maxDepthResolved: Int!
+    nodeCount: Int!
+    linkCount: Int!
+    truncated: Boolean!
+    availableRoots: [CanvasTreeRootOption!]!
+    nodes: [CanvasTreeNode!]!
+    links: [CanvasTreeLink!]!
+    summary: CanvasTreeSummary!
+  }
+
   type SystemCanvasNode {
     id: ID!
     label: String!
@@ -272,6 +349,12 @@ export const typeDefs = `#graphql
       focusHistory: [ID!]
       highlightedNotePaths: [String!]
     ): CanvasLanesSnapshot
+    canvasTree(
+      canvasPath: String
+      rootNodeId: ID
+      maxDepth: Int
+      highlightedNotePaths: [String!]
+    ): CanvasTreeSnapshot
     systemCanvas(selectedPromptId: ID): SystemCanvasSnapshot!
     prompt(id: ID!): Prompt
     prompts(limit: Int): [Prompt!]!
